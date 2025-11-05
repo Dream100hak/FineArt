@@ -1,0 +1,17 @@
+# Build artifacts
+bin/
+obj/
+
+# Visual Studio files
+.vs/
+
+# User-specific files
+*.user
+*.rsuser
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Others
+*.swp
+*.DS_Store
