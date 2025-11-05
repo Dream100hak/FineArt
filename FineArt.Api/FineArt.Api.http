@@ -1,0 +1,6 @@
+@FineArt.Api_HostAddress = http://localhost:5109
+
+GET {{FineArt.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
