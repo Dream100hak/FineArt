@@ -1,7 +1,7 @@
 namespace FineArt.Domain;
 
 /// <summary>
-/// ë„ë©”ì¸ ê¸°ë³¸ ì—”í„°í‹° ì˜ˆì‹œ
+///  // µµ¸ŞÀÎ ÀÇÁ¸¼º ¿¹½Ã
 /// </summary>
 public class DomainMarker
 {

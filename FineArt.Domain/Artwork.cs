@@ -1,6 +1,5 @@
 namespace FineArt.Domain;
 
-// 작품 정보 엔터티
 public enum ArtworkStatus
 {
     ForSale,

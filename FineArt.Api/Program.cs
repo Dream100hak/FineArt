@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using FineArt.Infrastructure.Persistence;
 using FineArt.Domain;
+using FineArt.Api.Contracts;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -39,14 +40,14 @@ app.MapGet("/api/artworks/{id:int}", async (int id, AppDb db) =>
                      : Results.Ok(new { a.Id, a.Title, a.Price, a.ImageUrl, a.Status, a.CreatedAt });
 });
 
-record ArtworkCreateDto(string Title, int Price, string? ImageUrl);
 
 app.MapPost("/api/artworks", async (ArtworkCreateDto dto, AppDb db) =>
 {
     if (string.IsNullOrWhiteSpace(dto.Title) || dto.Price < 0)
         return Results.BadRequest(new { message = "유효하지 않은 입력" });
 
-    var e = new Artwork {
+    var e = new Artwork
+    {
         Title = dto.Title.Trim(),
         Price = dto.Price,
         ImageUrl = dto.ImageUrl?.Trim() ?? "",
