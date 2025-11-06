@@ -92,7 +92,7 @@ app.MapGet("/api/artworks/{id:int}", async (int id, AppDb db) =>
 app.MapPost("/api/artworks", async (ArtworkCreateDto dto, AppDb db) =>
 {
     if (string.IsNullOrWhiteSpace(dto.Title) || dto.Price < 0)
-        return Results.BadRequest(new { message = "ìœ íš¨í•˜ì§€ ì•Šì€ ìž…ë ¥" });
+        return Results.BadRequest(new { message = "? íš¨?˜ì? ?Šì? ?…ë ¥" });
 
     var e = new Artwork
     {
