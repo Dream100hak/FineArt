@@ -29,5 +29,11 @@ public class AppDb : DbContext
             builder.Property(a => a.Nationality).HasMaxLength(100);
             builder.Property(a => a.ImageUrl).HasMaxLength(1024);
         });
+
+        modelBuilder.Entity<Artwork>(builder =>
+        {
+            builder.HasIndex(a => a.Price).HasDatabaseName("idx_artwork_price");
+            builder.HasIndex(a => a.CreatedAt).HasDatabaseName("idx_artwork_created_at");
+        });
     }
 }

@@ -1,6 +1,7 @@
 ﻿using System.Text;
 using System.Text.Json;
 using FineArt.Api.Contracts;
+using FineArt.Application.Artworks;
 using FineArt.Application.Auth;
 using FineArt.Infrastructure.Auth;
 using FineArt.Infrastructure.Persistence;
@@ -74,6 +75,7 @@ builder.Services.AddControllers();
 builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<AuthService>();
+builder.Services.AddScoped<ArtworkQueryService>();
 
 builder.Services.AddCors(o => o.AddPolicy("react", p => p
     .WithOrigins("http://localhost:3000", "https://fineart.co.kr", "https://admin.fineart.co.kr")

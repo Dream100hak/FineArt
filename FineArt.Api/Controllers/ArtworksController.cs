@@ -1,5 +1,6 @@
 ﻿using System.Linq;
 using FineArt.Api.Contracts;
+using FineArt.Application.Artworks;
 using FineArt.Domain;
 using FineArt.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authorization;
@@ -13,31 +14,64 @@ namespace FineArt.Api.Controllers;
 public class ArtworksController : ControllerBase
 {
     private readonly AppDb _db;
+    private readonly ArtworkQueryService _artworkQueryService;
 
-    public ArtworksController(AppDb db)
+    public ArtworksController(AppDb db, ArtworkQueryService artworkQueryService)
     {
         _db = db;
+        _artworkQueryService = artworkQueryService;
     }
 
     [HttpGet]
     [AllowAnonymous]
-    public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
+    public async Task<IActionResult> GetAll(
+        [FromQuery] string? keyword,
+        [FromQuery] int? priceMin,
+        [FromQuery] int? priceMax,
+        [FromQuery] string? status,
+        [FromQuery] string? sort,
+        [FromQuery] int page = 1,
+        [FromQuery] int size = 10,
+        CancellationToken cancellationToken = default)
     {
-        var artworks = await _db.Artworks
-            .AsNoTracking()
-            .OrderByDescending(a => a.Id)
-            .Select(a => new
-            {
-                a.Id,
-                a.Title,
-                a.Price,
-                a.ImageUrl,
-                Status = a.Status.ToString(),
-                a.CreatedAt
-            })
-            .ToListAsync(cancellationToken);
+        if (page < 1)
+        {
+            page = 1;
+        }
 
-        return Ok(artworks);
+        if (size < 1)
+        {
+            size = 10;
+        }
+
+        var (items, total) = await _artworkQueryService.QueryAsync(
+            _db.Artworks.AsNoTracking(),
+            keyword,
+            priceMin,
+            priceMax,
+            status,
+            sort,
+            page,
+            size,
+            cancellationToken);
+
+        var responseItems = items.Select(a => new
+        {
+            a.Id,
+            a.Title,
+            a.Price,
+            a.ImageUrl,
+            Status = a.Status.ToString(),
+            a.CreatedAt
+        });
+
+        return Ok(new
+        {
+            total,
+            page,
+            size,
+            items = responseItems
+        });
     }
 
     [HttpGet("{id:int}")]
