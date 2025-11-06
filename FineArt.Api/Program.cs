@@ -1,12 +1,14 @@
-using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.IdentityModel.Tokens;
-using System.Text;
-using FineArt.Infrastructure.Persistence;
-using FineArt.Domain;
+ï»¿using System.Text;
+using System.Text.Json;
 using FineArt.Api.Contracts;
 using FineArt.Application.Auth;
 using FineArt.Infrastructure.Auth;
+using FineArt.Infrastructure.Persistence;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -42,6 +44,25 @@ builder.Services.AddAuthentication(options =>
         ValidateLifetime = true,
         ClockSkew = TimeSpan.FromMinutes(1)
     };
+
+    options.Events = new JwtBearerEvents
+    {
+        OnChallenge = context =>
+        {
+            context.HandleResponse();
+            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+            context.Response.ContentType = "application/json";
+            var payload = JsonSerializer.Serialize(new { message = "Authentication is required." });
+            return context.Response.WriteAsync(payload, context.HttpContext.RequestAborted);
+        },
+        OnForbidden = context =>
+        {
+            context.Response.StatusCode = StatusCodes.Status403Forbidden;
+            context.Response.ContentType = "application/json";
+            var payload = JsonSerializer.Serialize(new { message = "Access is forbidden." });
+            return context.Response.WriteAsync(payload, context.HttpContext.RequestAborted);
+        }
+    };
 });
 
 builder.Services.AddAuthorization(options =>
@@ -49,62 +70,71 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("AdminOnly", policy => policy.RequireRole("Admin"));
 });
 
+builder.Services.AddControllers();
 builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<AuthService>();
 
 builder.Services.AddCors(o => o.AddPolicy("react", p => p
-    .WithOrigins("http://localhost:3000","https://fineart.co.kr","https://admin.fineart.co.kr")
+    .WithOrigins("http://localhost:3000", "https://fineart.co.kr", "https://admin.fineart.co.kr")
     .AllowAnyHeader().AllowAnyMethod().AllowCredentials()));
 
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "FineArt API",
+        Version = "v1"
+    });
+
+    var securityScheme = new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "Bearer {token}"
+    };
+
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        In = ParameterLocation.Header,
+        Description = "JWT Authorization header using the Bearer scheme. Example: 'Bearer {token}'",
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT"
+    });
+
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+{
+    {
+        new OpenApiSecurityScheme
+        {
+            Reference = new OpenApiReference
+            {
+                Type = ReferenceType.SecurityScheme,
+                Id = "Bearer"
+            }
+        },
+        new string[] {}
+    }
+});
+});
 
 var app = builder.Build();
 
 app.UseCors("react");
 
+app.UseSwagger();
+app.UseSwaggerUI();
+
 app.UseAuthentication();
 app.UseAuthorization();
 
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
-
 app.MapGet("/healthz", () => Results.Ok(new { ok = true, ts = DateTime.UtcNow }));
-
-app.MapGet("/api/artworks", async (AppDb db) =>
-    await db.Artworks
-      .OrderByDescending(a => a.Id)
-      .Select(a => new { a.Id, a.Title, a.Price, a.ImageUrl, a.Status, a.CreatedAt })
-      .ToListAsync());
-
-app.MapGet("/api/artworks/{id:int}", async (int id, AppDb db) =>
-{
-    var a = await db.Artworks.FindAsync(id);
-    return a is null ? Results.NotFound()
-                     : Results.Ok(new { a.Id, a.Title, a.Price, a.ImageUrl, a.Status, a.CreatedAt });
-});
-
-
-app.MapPost("/api/artworks", async (ArtworkCreateDto dto, AppDb db) =>
-{
-    if (string.IsNullOrWhiteSpace(dto.Title) || dto.Price < 0)
-        return Results.BadRequest(new { message = "? íš¨?˜ì? ?Šì? ?…ë ¥" });
-
-    var e = new Artwork
-    {
-        Title = dto.Title.Trim(),
-        Price = dto.Price,
-        ImageUrl = dto.ImageUrl?.Trim() ?? "",
-        CreatedAt = DateTime.UtcNow
-    };
-    db.Artworks.Add(e);
-    await db.SaveChangesAsync();
-    return Results.Created($"/api/artworks/{e.Id}", new { e.Id, e.Title, e.Price, e.ImageUrl, e.CreatedAt });
-}).RequireAuthorization("AdminOnly");
 
 app.MapPost("/auth/register", async (RegisterRequest request, AuthService authService, CancellationToken cancellationToken) =>
 {
@@ -121,5 +151,7 @@ app.MapPost("/auth/login", async (LoginRequest request, AuthService authService,
         ? Results.Ok(new AuthResponse(result.Token!, result.ExpiresAt!.Value))
         : Results.BadRequest(new { message = result.Error });
 });
+
+app.MapControllers();
 
 app.Run();

@@ -1,29 +1,33 @@
-﻿using FineArt.Infrastructure.Persistence;
+using System.IO;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.Extensions.Configuration;
+
+namespace FineArt.Infrastructure.Persistence;
 
 public class AppDbFactory : IDesignTimeDbContextFactory<AppDb>
 {
     public AppDb CreateDbContext(string[] args)
     {
-        // FineArt.Infrastructure 기준으로 FineArt.Api 폴더를 BasePath로
-        var basePath = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "..", "FineArt.Api"));
+        var basePath = Directory.GetCurrentDirectory();
+        var apiPath = Path.Combine(basePath, "..", "FineArt.Api");
 
-        var cfg = new ConfigurationBuilder()
-            .SetBasePath(basePath)
-            .AddJsonFile("appsettings.json", optional: true)
+        var configuration = new ConfigurationBuilder()
+            .SetBasePath(apiPath)
+            .AddJsonFile("appsettings.json", optional: false)
             .AddJsonFile("appsettings.Development.json", optional: true)
             .AddEnvironmentVariables()
             .Build();
 
-        var cs = cfg.GetConnectionString("MySql")
-                 ?? "server=localhost;port=3306;database=fineart;user=root;password=비번";
+        var cs = configuration.GetConnectionString("MySql");
+        if (string.IsNullOrWhiteSpace(cs))
+        {
+            throw new InvalidOperationException("MySql connection string was not found.");
+        }
 
-        var options = new DbContextOptionsBuilder<AppDb>()
-            .UseMySql(cs, ServerVersion.AutoDetect(cs))
-            .Options;
+        var optionsBuilder = new DbContextOptionsBuilder<AppDb>();
+        optionsBuilder.UseMySql(cs, ServerVersion.AutoDetect(cs));
 
-        return new AppDb(options);
+        return new AppDb(optionsBuilder.Options);
     }
 }
