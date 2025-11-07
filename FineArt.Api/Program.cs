@@ -141,6 +141,8 @@ using (var scope = app.Services.CreateScope())
 
 app.UseCors("react");
 
+app.UseStaticFiles();
+
 app.UseSwagger();
 app.UseSwaggerUI();
 

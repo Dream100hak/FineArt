@@ -3,16 +3,16 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
-import useAuthContext from '@/hooks/useAuthContext';
 import { deleteArticle } from '@/lib/api';
+import useDecodedAuth from '@/hooks/useDecodedAuth';
 
 export default function ArticleAdminActions({ articleId }) {
   const router = useRouter();
-  const { role } = useAuthContext();
+  const { decodedRole } = useDecodedAuth();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState(null);
 
-  if (role !== 'Admin') {
+  if (decodedRole !== 'admin') {
     return null;
   }
 

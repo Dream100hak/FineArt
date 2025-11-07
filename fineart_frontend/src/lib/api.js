@@ -4,6 +4,8 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5000';
 const API_TIMEOUT = 10_000;
 export const TOKEN_STORAGE_KEY = 'fineart_token';
 export const TOKEN_COOKIE_KEY = 'fineart_token';
+export const ROLE_STORAGE_KEY = 'fineart_role';
+export const EMAIL_STORAGE_KEY = 'fineart_email';
 
 const isServer = typeof window === 'undefined';
 const needsDevHttpsBypass =
@@ -43,6 +45,17 @@ const getAuthToken = () => {
   }
 
   return readCookieToken();
+};
+
+export const clearStoredSession = () => {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage?.removeItem(TOKEN_STORAGE_KEY);
+    window.localStorage?.removeItem(ROLE_STORAGE_KEY);
+    window.localStorage?.removeItem(EMAIL_STORAGE_KEY);
+  } catch (error) {
+    console.warn('[API] Unable to clear auth session:', error);
+  }
 };
 
 api.interceptors.request.use(

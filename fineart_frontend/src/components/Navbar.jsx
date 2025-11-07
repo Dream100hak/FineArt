@@ -1,9 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { FiFeather, FiMenu } from 'react-icons/fi';
 import { useState } from 'react';
+import { clearAuthSession } from '@/lib/auth';
+import useDecodedAuth from '@/hooks/useDecodedAuth';
 
 const routes = [
   { href: '/', label: 'Home' },
@@ -15,7 +17,15 @@ const routes = [
 
 export default function Navbar() {
   const pathname = usePathname();
+  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
+  const { isAuthenticated, decodedEmail, decodedRole } = useDecodedAuth();
+
+  const handleLogout = () => {
+    clearAuthSession();
+    setIsOpen(false);
+    router.push('/');
+  };
 
   return (
     <header className="border-b border-neutral-200 bg-white/80 backdrop-blur sticky top-0 z-50">
@@ -37,12 +47,27 @@ export default function Navbar() {
               {route.label}
             </Link>
           ))}
-          <Link
-            href="/login"
-            className="rounded-full border border-primary px-4 py-1.5 text-primary transition hover:bg-primary hover:text-white"
-          >
-            Login
-          </Link>
+          {isAuthenticated ? (
+            <div className="flex items-center gap-3">
+              <span className="text-xs uppercase tracking-wide text-neutral-500">
+                {decodedEmail ?? '로그인됨'} ({decodedRole ?? 'guest'})
+              </span>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="rounded-full border border-primary px-4 py-1.5 text-primary transition hover:bg-primary hover:text-white"
+              >
+                로그아웃
+              </button>
+            </div>
+          ) : (
+            <Link
+              href="/login"
+              className="rounded-full border border-primary px-4 py-1.5 text-primary transition hover:bg-primary hover:text-white"
+            >
+              Login
+            </Link>
+          )}
         </nav>
 
         <button
@@ -62,9 +87,24 @@ export default function Navbar() {
               {route.label}
             </Link>
           ))}
-          <Link href="/login" onClick={() => setIsOpen(false)}>
-            Login
-          </Link>
+          {isAuthenticated ? (
+            <>
+              <span className="text-xs uppercase tracking-wide text-neutral-500">
+                {decodedEmail ?? '로그인됨'} ({decodedRole ?? 'guest'})
+              </span>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="rounded-full border border-primary px-4 py-1.5 text-primary transition hover:bg-primary hover:text-white"
+              >
+                로그아웃
+              </button>
+            </>
+          ) : (
+            <Link href="/login" onClick={() => setIsOpen(false)}>
+              Login
+            </Link>
+          )}
         </div>
       )}
     </header>

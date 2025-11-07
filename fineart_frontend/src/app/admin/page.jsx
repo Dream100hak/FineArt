@@ -1,27 +1,52 @@
+'use client';
+
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import useDecodedAuth from '@/hooks/useDecodedAuth';
+
 const sections = [
   {
     title: 'Articles',
-    description: '신규 아티클 작성, 승인 상태 관리, 노출 우선순위를 조정합니다.',
+    description: '공지, 이벤트, 자유 게시글을 제작하고 큐레이션합니다.',
   },
   {
     title: 'Artists',
-    description: '작가 프로필, 연락처, 대표 작품을 업데이트합니다.',
+    description: '작가 정보, 연락처, 대표 작품을 최신 상태로 유지합니다.',
   },
   {
     title: 'Artworks',
-    description: '작품 이미지, 재료, 전시 이력을 관리합니다.',
+    description: '작품 이미지, 재료, 전시 이력과 판매 상태를 관리합니다.',
   },
 ];
 
 export default function AdminPage() {
+  const router = useRouter();
+  const { isAuthenticated, decodedRole } = useDecodedAuth();
+  const isAdmin = decodedRole === 'admin';
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      router.replace('/login');
+    } else if (!isAdmin) {
+      router.replace('/');
+    }
+  }, [isAuthenticated, isAdmin, router]);
+
+  if (!isAdmin) {
+    return (
+      <div className="screen-padding section mx-auto flex w-full max-w-3xl flex-col items-center gap-4 text-center">
+        <p className="text-lg font-semibold text-neutral-900">접근 권한이 없습니다.</p>
+        <p className="text-sm text-neutral-500">관리자 계정으로 로그인해 주세요.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="screen-padding section mx-auto flex w-full max-w-6xl flex-col gap-8">
       <header className="space-y-2">
         <p className="text-sm uppercase tracking-[0.3em] text-neutral-500">Admin Console</p>
         <h1 className="text-4xl font-semibold">관리자 대시보드</h1>
-        <p className="text-neutral-600">
-          콘텐츠 팀이 게시글, 작가, 작품 데이터를 운영 환경에 배포하기 전에 검수할 수 있는 공간입니다.
-        </p>
+        <p className="text-neutral-600">콘텐츠 및 스튜디오 운영을 위한 전용 공간입니다.</p>
       </header>
 
       <section className="grid gap-5 md:grid-cols-3">

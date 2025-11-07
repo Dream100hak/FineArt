@@ -1,9 +1,8 @@
 'use client';
 
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import Link from 'next/link';
 import { useState, useTransition } from 'react';
-import useAuthContext from '@/hooks/useAuthContext';
+import useDecodedAuth from '@/hooks/useDecodedAuth';
 
 const buildNextUrl = (pathname, searchParams, updates) => {
   const params = new URLSearchParams(searchParams.toString());
@@ -26,7 +25,8 @@ export default function ArticleFilters({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const { isAuthenticated } = useAuthContext();
+  const { isAuthenticated, decodedRole } = useDecodedAuth();
+  const isAdmin = decodedRole === 'admin';
   const [keyword, setKeyword] = useState(initialKeyword ?? '');
   const [isPending, startTransition] = useTransition();
 
@@ -46,6 +46,21 @@ export default function ArticleFilters({
     const value = Number(event.target.value);
     const updates = { size: value, page: 1 };
     startTransition(() => router.push(buildNextUrl(pathname, searchParams, updates)));
+  };
+
+  const handleWriteClick = () => {
+    if (!isAuthenticated) {
+      alert('로그인이 필요하거나 권한이 없습니다.');
+      router.push('/login');
+      return;
+    }
+
+    if (!isAdmin) {
+      alert('로그인이 필요하거나 권한이 없습니다.');
+      return;
+    }
+
+    router.push('/admin/articles');
   };
 
   return (
@@ -70,13 +85,14 @@ export default function ArticleFilters({
             );
           })}
         </div>
-        {isAuthenticated && (
-          <Link
-            href="/admin/articles"
+        {isAdmin && (
+          <button
+            type="button"
+            onClick={handleWriteClick}
             className="inline-flex items-center justify-center rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary/90"
           >
             글쓰기
-          </Link>
+          </button>
         )}
       </div>
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">

@@ -1,7 +1,7 @@
 'use client';
 
 import { useSyncExternalStore } from 'react';
-import { getAuthSnapshot } from '@/lib/auth';
+import { AUTH_CHANGE_EVENT, getAuthSnapshot } from '@/lib/auth';
 
 const defaultValue = {
   isAuthenticated: false,
@@ -17,7 +17,11 @@ const subscribe = (callback) => {
   }
   const handler = () => callback();
   window.addEventListener('storage', handler);
-  return () => window.removeEventListener('storage', handler);
+  window.addEventListener(AUTH_CHANGE_EVENT, handler);
+  return () => {
+    window.removeEventListener('storage', handler);
+    window.removeEventListener(AUTH_CHANGE_EVENT, handler);
+  };
 };
 
 export default function useAuthContext() {

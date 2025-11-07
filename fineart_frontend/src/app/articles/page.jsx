@@ -1,6 +1,7 @@
 import ArticleCard from '@/components/articles/ArticleCard';
 import ArticleFilters from '@/components/articles/ArticleFilters';
 import ArticlePagination from '@/components/articles/ArticlePagination';
+import AuthDebugBadge from '@/components/AuthDebugBadge';
 import { getArticles } from '@/lib/api';
 
 export const revalidate = 0;
@@ -113,8 +114,13 @@ export default async function ArticlesPage({ searchParams }) {
   return (
     <div className="screen-padding section mx-auto flex w-full max-w-6xl flex-col gap-10">
       <header className="space-y-3">
-        <p className="text-sm uppercase tracking-[0.3em] text-neutral-500">Stories &amp; Insights</p>
-        <h1 className="text-4xl font-semibold text-neutral-900">FineArt 게시판</h1>
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <p className="text-sm uppercase tracking-[0.3em] text-neutral-500">Stories &amp; Insights</p>
+            <h1 className="text-4xl font-semibold text-neutral-900">FineArt 게시판</h1>
+          </div>
+          <AuthDebugBadge />
+        </div>
         <p className="text-neutral-600">
           공지, 이벤트, 자유게시판을 한 곳에서 확인하고 검색·필터링해 보세요.
         </p>

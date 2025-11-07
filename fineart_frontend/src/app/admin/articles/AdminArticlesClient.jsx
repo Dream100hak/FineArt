@@ -1,7 +1,7 @@
 'use client';
 
-import dynamic from 'next/dynamic';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   createArticle,
   deleteArticle,
@@ -9,10 +9,7 @@ import {
   updateArticle,
   uploadArticleImage,
 } from '@/lib/api';
-import useAuthContext from '@/hooks/useAuthContext';
-import 'react-quill/dist/quill.snow.css';
-
-const ReactQuill = dynamic(() => import('react-quill'), { ssr: false });
+import useDecodedAuth from '@/hooks/useDecodedAuth';
 
 const CATEGORY_OPTIONS = [
   { value: 'notice', label: '공지사항' },
@@ -45,8 +42,10 @@ const resolveUploadUrl = (payload) =>
   payload?.url ?? payload?.data?.url ?? payload?.Location ?? payload?.path ?? '';
 
 export default function AdminArticlesClient({ initialArticleId }) {
-  const auth = useAuthContext();
-  const canManage = auth.role === 'Admin';
+  const router = useRouter();
+  const { isAuthenticated, decodedRole } = useDecodedAuth();
+  const isAdmin = decodedRole === 'admin';
+  const canManage = isAuthenticated && isAdmin;
   const [articles, setArticles] = useState([]);
   const [meta, setMeta] = useState({ page: 1, size: 10, total: 0 });
   const [filters, setFilters] = useState({ category: '', keyword: '' });
@@ -60,25 +59,6 @@ export default function AdminArticlesClient({ initialArticleId }) {
   const heroInputRef = useRef(null);
   const thumbInputRef = useRef(null);
   const contentImageRef = useRef(null);
-  const quillRef = useRef(null);
-
-  const quillModules = useMemo(
-    () => ({
-      toolbar: {
-        container: [
-          [{ header: [1, 2, 3, false] }],
-          ['bold', 'italic', 'underline', 'strike'],
-          [{ list: 'ordered' }, { list: 'bullet' }],
-          ['link', 'image'],
-          ['clean'],
-        ],
-        handlers: {
-          image: () => contentImageRef.current?.click(),
-        },
-      },
-    }),
-    [],
-  );
 
   const fetchArticles = useCallback(
     async (pageOverride = 1) => {
@@ -222,11 +202,10 @@ export default function AdminArticlesClient({ initialArticleId }) {
       const result = await uploadArticleImage(file);
       const url = resolveUploadUrl(result);
       if (!url) return;
-      const editor = quillRef.current?.getEditor();
-      if (!editor) return;
-      const range = editor.getSelection(true) ?? { index: editor.getLength(), length: 0 };
-      editor.insertEmbed(range.index, 'image', url);
-      editor.setSelection(range.index + 1);
+      setForm((prev) => ({
+        ...prev,
+        content: `${prev.content}\n<p><img src="${url}" alt="article-image" /></p>`,
+      }));
       setMessage('본문 이미지가 추가되었습니다.');
     } catch (err) {
       console.error('[Admin Articles] rich text upload failed', err);
@@ -234,10 +213,19 @@ export default function AdminArticlesClient({ initialArticleId }) {
     }
   };
 
+  useEffect(() => {
+    if (!isAuthenticated) {
+      router.replace('/login');
+    } else if (!isAdmin) {
+      router.replace('/');
+    }
+  }, [isAuthenticated, isAdmin, router]);
+
   if (!canManage) {
     return (
-      <div className="rounded-3xl border border-dashed border-neutral-200 bg-white p-10 text-center text-neutral-500">
-        관리 권한이 필요한 페이지입니다. 관리자 계정으로 로그인한 뒤 다시 시도하세요.
+      <div className="screen-padding section mx-auto flex w-full max-w-3xl flex-col items-center gap-4 text-center">
+        <p className="text-lg font-semibold text-neutral-900">접근 권한이 없습니다.</p>
+        <p className="text-sm text-neutral-500">관리자 계정으로 로그인해 주세요.</p>
       </div>
     );
   }
@@ -462,7 +450,7 @@ export default function AdminArticlesClient({ initialArticleId }) {
 
           <div className="space-y-2">
             <div className="flex items-center justify-between text-sm">
-              <span className="font-medium text-neutral-700">본문 내용</span>
+              <span className="font-medium text-neutral-700">본문 내용 (HTML 지원)</span>
               <button
                 type="button"
                 onClick={() => contentImageRef.current?.click()}
@@ -471,14 +459,16 @@ export default function AdminArticlesClient({ initialArticleId }) {
                 본문 이미지 추가
               </button>
             </div>
-            <ReactQuill
-              ref={quillRef}
-              theme="snow"
+            <textarea
               value={form.content}
-              onChange={(value) => setForm((prev) => ({ ...prev, content: value }))}
-              modules={quillModules}
-              className="rounded-2xl border border-neutral-200 bg-white"
+              onChange={(event) => setForm((prev) => ({ ...prev, content: event.target.value }))}
+              placeholder="HTML 또는 단순 텍스트로 내용을 작성해 주세요. 이미지 버튼으로 <img> 태그가 자동 삽입됩니다."
+              className="min-h-[260px] w-full rounded-2xl border border-neutral-200 p-4 font-mono text-sm focus:border-primary focus:outline-none"
             />
+            <p className="text-xs text-neutral-500">
+              미리보기 위젯 대신 HTML을 직접 작성합니다. 기본 텍스트만 입력해도 문제없으며, 이미지 버튼을 누르면 &lt;img&gt;
+              태그가 자동으로 추가됩니다.
+            </p>
           </div>
 
           <div className="flex items-center justify-end gap-3">
