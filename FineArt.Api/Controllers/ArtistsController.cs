@@ -63,6 +63,43 @@ public class ArtistsController : ControllerBase
             : Ok(artist);
     }
 
+    [HttpGet("{id:int}/artworks")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetArtworksByArtist(int id, CancellationToken cancellationToken)
+    {
+        var artist = await _db.Artists
+            .AsNoTracking()
+            .Where(a => a.Id == id)
+            .Select(a => new { a.Id, a.Name })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (artist is null)
+        {
+            return NotFound(new { message = "Artist not found." });
+        }
+
+        var artistName = artist.Name;
+
+        var artworks = await _db.Artworks
+            .AsNoTracking()
+            .Where(a => a.ArtistId == id)
+            .OrderByDescending(a => a.Id)
+            .Select(a => new
+            {
+                a.Id,
+                a.Title,
+                a.Price,
+                a.ImageUrl,
+                Status = a.Status.ToString(),
+                a.ArtistId,
+                ArtistName = artistName,
+                a.CreatedAt
+            })
+            .ToListAsync(cancellationToken);
+
+        return Ok(artworks);
+    }
+
     [HttpPost]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Create([FromBody] ArtistCreateRequest request, CancellationToken cancellationToken)

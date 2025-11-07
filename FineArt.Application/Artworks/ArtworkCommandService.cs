@@ -19,6 +19,7 @@ public class ArtworkCommandService
         int price,
         string? imageUrl,
         ArtworkStatus status,
+        int artistId,
         CancellationToken cancellationToken = default)
     {
         var artwork = new Artwork
@@ -27,7 +28,8 @@ public class ArtworkCommandService
             Price = price,
             ImageUrl = imageUrl?.Trim() ?? string.Empty,
             Status = status,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
+            ArtistId = artistId
         };
 
         await _artworks.AddAsync(artwork, cancellationToken);
@@ -42,6 +44,7 @@ public class ArtworkCommandService
         int price,
         string? imageUrl,
         ArtworkStatus status,
+        int artistId,
         CancellationToken cancellationToken = default)
     {
         var artwork = await _artworks.FirstOrDefaultAsync(a => a.Id == id, cancellationToken);
@@ -54,6 +57,7 @@ public class ArtworkCommandService
         artwork.Price = price;
         artwork.ImageUrl = imageUrl?.Trim() ?? string.Empty;
         artwork.Status = status;
+        artwork.ArtistId = artistId;
 
         await _db.SaveChangesAsync(cancellationToken);
 

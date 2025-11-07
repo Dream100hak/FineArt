@@ -8,4 +8,5 @@ public class Artist
     public string Nationality { get; set; } = string.Empty;
     public string ImageUrl { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public List<Artwork> Artworks { get; set; } = new();
 }

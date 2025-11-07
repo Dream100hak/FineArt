@@ -15,4 +15,6 @@ public class Artwork
     public string ImageUrl { get; set; } = "";
     public ArtworkStatus Status { get; set; } = ArtworkStatus.ForSale;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public int ArtistId { get; set; }
+    public Artist? Artist { get; set; }
 }

@@ -34,6 +34,10 @@ public class AppDb : DbContext
         {
             builder.HasIndex(a => a.Price).HasDatabaseName("idx_artwork_price");
             builder.HasIndex(a => a.CreatedAt).HasDatabaseName("idx_artwork_created_at");
+            builder.HasOne(a => a.Artist)
+                .WithMany(ar => ar.Artworks)
+                .HasForeignKey(a => a.ArtistId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

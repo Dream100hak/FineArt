@@ -49,8 +49,12 @@ public class ArtworksController : ControllerBase
             size = 10;
         }
 
+        var source = _db.Artworks
+            .AsNoTracking()
+            .Include(a => a.Artist);
+
         var (items, total) = await _artworkQueryService.QueryAsync(
-            _db.Artworks.AsNoTracking(),
+            source,
             keyword,
             priceMin,
             priceMax,
@@ -67,6 +71,8 @@ public class ArtworksController : ControllerBase
             a.Price,
             a.ImageUrl,
             Status = a.Status.ToString(),
+            a.ArtistId,
+            ArtistName = a.Artist?.Name ?? string.Empty,
             a.CreatedAt
         });
 
@@ -93,6 +99,8 @@ public class ArtworksController : ControllerBase
                 a.Price,
                 a.ImageUrl,
                 Status = a.Status.ToString(),
+                a.ArtistId,
+                ArtistName = a.Artist != null ? a.Artist.Name : string.Empty,
                 a.CreatedAt
             })
             .FirstOrDefaultAsync(cancellationToken);
@@ -106,9 +114,9 @@ public class ArtworksController : ControllerBase
     [Authorize(Policy = "AdminOnly")]
     public async Task<IActionResult> Create([FromBody] ArtworkCreateDto dto, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(dto.Title) || dto.Price < 0)
+        if (string.IsNullOrWhiteSpace(dto.Title) || dto.Price < 0 || dto.ArtistId <= 0)
         {
-            return BadRequest(new { message = "Title and price must be valid." });
+            return BadRequest(new { message = "Title, price, and artist must be valid." });
         }
 
         if (!Enum.TryParse<ArtworkStatus>(dto.Status, true, out var status))
@@ -116,11 +124,20 @@ public class ArtworksController : ControllerBase
             return BadRequest(new { message = "Artwork status is not valid." });
         }
 
+        var artist = await _db.Artists
+            .AsNoTracking()
+            .FirstOrDefaultAsync(a => a.Id == dto.ArtistId, cancellationToken);
+        if (artist is null)
+        {
+            return BadRequest(new { message = "Artist not found." });
+        }
+
         var artwork = await _artworkCommandService.CreateAsync(
             dto.Title,
             dto.Price,
             dto.ImageUrl,
             status,
+            dto.ArtistId,
             cancellationToken);
 
         return CreatedAtAction(nameof(GetById), new { id = artwork.Id }, new
@@ -130,6 +147,8 @@ public class ArtworksController : ControllerBase
             artwork.Price,
             artwork.ImageUrl,
             Status = artwork.Status.ToString(),
+            artwork.ArtistId,
+            ArtistName = artist.Name,
             artwork.CreatedAt
         });
     }
@@ -138,14 +157,22 @@ public class ArtworksController : ControllerBase
     [Authorize(Policy = "AdminOnly")]
     public async Task<IActionResult> Update(int id, [FromBody] ArtworkUpdateDto dto, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(dto.Title) || dto.Price < 0)
+        if (string.IsNullOrWhiteSpace(dto.Title) || dto.Price < 0 || dto.ArtistId <= 0)
         {
-            return BadRequest(new { message = "Title and price must be valid." });
+            return BadRequest(new { message = "Title, price, and artist must be valid." });
         }
 
         if (!Enum.TryParse<ArtworkStatus>(dto.Status, true, out var status))
         {
             return BadRequest(new { message = "Artwork status is not valid." });
+        }
+
+        var artist = await _db.Artists
+            .AsNoTracking()
+            .FirstOrDefaultAsync(a => a.Id == dto.ArtistId, cancellationToken);
+        if (artist is null)
+        {
+            return BadRequest(new { message = "Artist not found." });
         }
 
         var artwork = await _artworkCommandService.UpdateAsync(
@@ -154,6 +181,7 @@ public class ArtworksController : ControllerBase
             dto.Price,
             dto.ImageUrl,
             status,
+            dto.ArtistId,
             cancellationToken);
 
         if (artwork is null)
@@ -168,6 +196,8 @@ public class ArtworksController : ControllerBase
             artwork.Price,
             artwork.ImageUrl,
             Status = artwork.Status.ToString(),
+            artwork.ArtistId,
+            ArtistName = artist.Name,
             artwork.CreatedAt
         });
     }
