@@ -75,7 +75,9 @@ builder.Services.AddControllers();
 builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<AuthService>();
+builder.Services.AddScoped<DbContext>(sp => sp.GetRequiredService<AppDb>());
 builder.Services.AddScoped<ArtworkQueryService>();
+builder.Services.AddScoped<ArtworkCommandService>();
 
 builder.Services.AddCors(o => o.AddPolicy("react", p => p
     .WithOrigins("http://localhost:3000", "https://fineart.co.kr", "https://admin.fineart.co.kr")

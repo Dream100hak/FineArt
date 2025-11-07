@@ -15,11 +15,16 @@ public class ArtworksController : ControllerBase
 {
     private readonly AppDb _db;
     private readonly ArtworkQueryService _artworkQueryService;
+    private readonly ArtworkCommandService _artworkCommandService;
 
-    public ArtworksController(AppDb db, ArtworkQueryService artworkQueryService)
+    public ArtworksController(
+        AppDb db,
+        ArtworkQueryService artworkQueryService,
+        ArtworkCommandService artworkCommandService)
     {
         _db = db;
         _artworkQueryService = artworkQueryService;
+        _artworkCommandService = artworkCommandService;
     }
 
     [HttpGet]
@@ -98,7 +103,7 @@ public class ArtworksController : ControllerBase
     }
 
     [HttpPost]
-    [Authorize]
+    [Authorize(Policy = "AdminOnly")]
     public async Task<IActionResult> Create([FromBody] ArtworkCreateDto dto, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(dto.Title) || dto.Price < 0)
@@ -106,16 +111,17 @@ public class ArtworksController : ControllerBase
             return BadRequest(new { message = "Title and price must be valid." });
         }
 
-        var artwork = new Artwork
+        if (!Enum.TryParse<ArtworkStatus>(dto.Status, true, out var status))
         {
-            Title = dto.Title.Trim(),
-            Price = dto.Price,
-            ImageUrl = dto.ImageUrl?.Trim() ?? string.Empty,
-            CreatedAt = DateTime.UtcNow
-        };
+            return BadRequest(new { message = "Artwork status is not valid." });
+        }
 
-        await _db.Artworks.AddAsync(artwork, cancellationToken);
-        await _db.SaveChangesAsync(cancellationToken);
+        var artwork = await _artworkCommandService.CreateAsync(
+            dto.Title,
+            dto.Price,
+            dto.ImageUrl,
+            status,
+            cancellationToken);
 
         return CreatedAtAction(nameof(GetById), new { id = artwork.Id }, new
         {
@@ -129,7 +135,7 @@ public class ArtworksController : ControllerBase
     }
 
     [HttpPut("{id:int}")]
-    [Authorize]
+    [Authorize(Policy = "AdminOnly")]
     public async Task<IActionResult> Update(int id, [FromBody] ArtworkUpdateDto dto, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(dto.Title) || dto.Price < 0)
@@ -142,18 +148,18 @@ public class ArtworksController : ControllerBase
             return BadRequest(new { message = "Artwork status is not valid." });
         }
 
-        var artwork = await _db.Artworks.FirstOrDefaultAsync(a => a.Id == id, cancellationToken);
+        var artwork = await _artworkCommandService.UpdateAsync(
+            id,
+            dto.Title,
+            dto.Price,
+            dto.ImageUrl,
+            status,
+            cancellationToken);
+
         if (artwork is null)
         {
             return NotFound(new { message = "Artwork not found." });
         }
-
-        artwork.Title = dto.Title.Trim();
-        artwork.Price = dto.Price;
-        artwork.ImageUrl = dto.ImageUrl?.Trim() ?? string.Empty;
-        artwork.Status = status;
-
-        await _db.SaveChangesAsync(cancellationToken);
 
         return Ok(new
         {
@@ -167,17 +173,14 @@ public class ArtworksController : ControllerBase
     }
 
     [HttpDelete("{id:int}")]
-    [Authorize]
+    [Authorize(Policy = "AdminOnly")]
     public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
     {
-        var artwork = await _db.Artworks.FirstOrDefaultAsync(a => a.Id == id, cancellationToken);
-        if (artwork is null)
+        var deleted = await _artworkCommandService.DeleteAsync(id, cancellationToken);
+        if (!deleted)
         {
             return NotFound(new { message = "Artwork not found." });
         }
-
-        _db.Artworks.Remove(artwork);
-        await _db.SaveChangesAsync(cancellationToken);
 
         return NoContent();
     }
