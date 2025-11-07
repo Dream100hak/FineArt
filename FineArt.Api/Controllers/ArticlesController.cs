@@ -49,6 +49,7 @@ public class ArticlesController : ControllerBase
         {
             a.Id,
             a.Title,
+            a.Content,
             a.Writer,
             a.Category,
             a.Views,

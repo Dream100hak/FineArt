@@ -83,7 +83,7 @@ builder.Services.AddScoped<ArticleQueryService>();
 builder.Services.AddScoped<ArticleCommandService>();
 
 builder.Services.AddCors(o => o.AddPolicy("react", p => p
-    .WithOrigins("http://localhost:3000", "https://fineart.co.kr", "https://admin.fineart.co.kr")
+    .WithOrigins("http://localhost:3000", "http://localhost:3001", "https://fineart.co.kr", "https://admin.fineart.co.kr")
     .AllowAnyHeader().AllowAnyMethod().AllowCredentials()));
 
 builder.Services.AddEndpointsApiExplorer();
