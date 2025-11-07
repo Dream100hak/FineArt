@@ -2,8 +2,8 @@ import axios from 'axios';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5000';
 const API_TIMEOUT = 10_000;
-const TOKEN_STORAGE_KEY = 'fineart_token';
-const TOKEN_COOKIE_KEY = 'fineart_token';
+export const TOKEN_STORAGE_KEY = 'fineart_token';
+export const TOKEN_COOKIE_KEY = 'fineart_token';
 
 const isServer = typeof window === 'undefined';
 const needsDevHttpsBypass =
@@ -11,7 +11,6 @@ const needsDevHttpsBypass =
 
 let httpsAgent;
 if (needsDevHttpsBypass) {
-  // eslint-disable-next-line global-require
   const { Agent } = require('https');
   httpsAgent = new Agent({ rejectUnauthorized: false });
   console.warn('[API] Development HTTPS certificate validation disabled for self-signed backend.');
@@ -71,7 +70,24 @@ const request = async (callback, label) => {
   }
 };
 
-export const getArticles = () => request(() => api.get('/api/articles'), 'GET /api/articles');
+const sanitizeParams = (params = {}) =>
+  Object.fromEntries(
+    Object.entries(params).filter(([, value]) => {
+      if (value === undefined || value === null) return false;
+      if (typeof value === 'string') return value.trim().length > 0;
+      if (typeof value === 'number') return !Number.isNaN(value);
+      return true;
+    }),
+  );
+
+export const getArticles = (params = {}) =>
+  request(
+    () =>
+      api.get('/api/articles', {
+        params: sanitizeParams(params),
+      }),
+    'GET /api/articles',
+  );
 
 export const getArticleById = (id) => {
   if (!id) throw new Error('Article id is required');
@@ -93,6 +109,25 @@ export const updateArticle = (id, payload) => {
 export const deleteArticle = (id) => {
   if (!id) throw new Error('Article id is required');
   return request(() => api.delete(`/api/articles/${id}`), 'DELETE /api/articles/:id');
+};
+
+export const uploadArticleImage = (file, fieldName = 'file') => {
+  if (!file) {
+    throw new Error('File is required for upload');
+  }
+
+  const formData = new FormData();
+  formData.append(fieldName, file);
+
+  return request(
+    () =>
+      api.post('/api/uploads', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }),
+    'POST /api/uploads',
+  );
 };
 
 export default api;

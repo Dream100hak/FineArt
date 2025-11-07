@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using System.Linq;
 using FineArt.Api.Contracts;
 using FineArt.Application.Articles;
@@ -50,10 +52,13 @@ public class ArticlesController : ControllerBase
             a.Id,
             a.Title,
             a.Content,
-            a.Writer,
+            Author = a.Writer,
+            Writer = a.Writer,
             a.Category,
             a.Views,
             a.ImageUrl,
+            a.ThumbnailUrl,
+            Images = BuildImageSet(a.ImageUrl, a.ThumbnailUrl),
             a.CreatedAt,
             a.UpdatedAt
         });
@@ -82,17 +87,20 @@ public class ArticlesController : ControllerBase
             article.Id,
             article.Title,
             article.Content,
-            article.Writer,
+            Author = article.Writer,
+            Writer = article.Writer,
             article.Category,
             article.Views,
             article.ImageUrl,
+            article.ThumbnailUrl,
+            Images = BuildImageSet(article.ImageUrl, article.ThumbnailUrl),
             article.CreatedAt,
             article.UpdatedAt
         });
     }
 
     [HttpPost]
-    [Authorize(Policy = "AdminOnly")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Create(
         [FromBody] ArticleCreateRequest request,
         CancellationToken cancellationToken = default)
@@ -108,6 +116,7 @@ public class ArticlesController : ControllerBase
             request.Title,
             request.Content,
             request.ImageUrl,
+            request.ThumbnailUrl,
             request.Writer,
             request.Category,
             cancellationToken);
@@ -117,17 +126,20 @@ public class ArticlesController : ControllerBase
             article.Id,
             article.Title,
             article.Content,
-            article.Writer,
+            Author = article.Writer,
+            Writer = article.Writer,
             article.Category,
             article.Views,
             article.ImageUrl,
+            article.ThumbnailUrl,
+            Images = BuildImageSet(article.ImageUrl, article.ThumbnailUrl),
             article.CreatedAt,
             article.UpdatedAt
         });
     }
 
     [HttpPut("{id:int}")]
-    [Authorize(Policy = "AdminOnly")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Update(
         int id,
         [FromBody] ArticleUpdateRequest request,
@@ -145,6 +157,7 @@ public class ArticlesController : ControllerBase
             request.Title,
             request.Content,
             request.ImageUrl,
+            request.ThumbnailUrl,
             request.Writer,
             request.Category,
             cancellationToken);
@@ -159,17 +172,20 @@ public class ArticlesController : ControllerBase
             article.Id,
             article.Title,
             article.Content,
-            article.Writer,
+            Author = article.Writer,
+            Writer = article.Writer,
             article.Category,
             article.Views,
             article.ImageUrl,
+            article.ThumbnailUrl,
+            Images = BuildImageSet(article.ImageUrl, article.ThumbnailUrl),
             article.CreatedAt,
             article.UpdatedAt
         });
     }
 
     [HttpDelete("{id:int}")]
-    [Authorize(Policy = "AdminOnly")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken = default)
     {
         var deleted = await _articleCommandService.DeleteAsync(id, cancellationToken);
@@ -179,6 +195,23 @@ public class ArticlesController : ControllerBase
         }
 
         return NoContent();
+    }
+
+    private static IReadOnlyList<string> BuildImageSet(string? imageUrl, string? thumbnailUrl)
+    {
+        var images = new List<string>(capacity: 2);
+        if (!string.IsNullOrWhiteSpace(imageUrl))
+        {
+            images.Add(imageUrl);
+        }
+
+        if (!string.IsNullOrWhiteSpace(thumbnailUrl) &&
+            !string.Equals(thumbnailUrl, imageUrl, StringComparison.OrdinalIgnoreCase))
+        {
+            images.Add(thumbnailUrl);
+        }
+
+        return images;
     }
 
     private static string? ValidateArticlePayload(string title, string content, string writer, string category)

@@ -47,6 +47,7 @@ public class AppDb : DbContext
             builder.Property(a => a.Writer).HasMaxLength(128);
             builder.Property(a => a.Category).HasMaxLength(64);
             builder.Property(a => a.ImageUrl).HasMaxLength(2048);
+            builder.Property(a => a.ThumbnailUrl).HasMaxLength(2048);
             builder.Property(a => a.Views).HasDefaultValue(0);
             builder.HasIndex(a => a.Category).HasDatabaseName("idx_articles_category");
             builder.HasIndex(a => a.CreatedAt).HasDatabaseName("idx_articles_created_at");

@@ -47,7 +47,7 @@ public class ArticleQueryService
     {
         if (!string.IsNullOrWhiteSpace(category))
         {
-            var normalizedCategory = category.Trim();
+            var normalizedCategory = category.Trim().ToLower();
             query = query.Where(a => a.Category == normalizedCategory);
         }
 

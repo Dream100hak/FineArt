@@ -18,6 +18,7 @@ public class ArticleCommandService
         string title,
         string content,
         string? imageUrl,
+        string? thumbnailUrl,
         string writer,
         string category,
         CancellationToken cancellationToken = default)
@@ -28,8 +29,9 @@ public class ArticleCommandService
             Title = title.Trim(),
             Content = content.Trim(),
             ImageUrl = imageUrl?.Trim() ?? string.Empty,
+            ThumbnailUrl = thumbnailUrl?.Trim() ?? string.Empty,
             Writer = writer.Trim(),
-            Category = category.Trim(),
+            Category = NormalizeCategory(category),
             Views = 0,
             CreatedAt = now,
             UpdatedAt = now
@@ -46,6 +48,7 @@ public class ArticleCommandService
         string title,
         string content,
         string? imageUrl,
+        string? thumbnailUrl,
         string writer,
         string category,
         CancellationToken cancellationToken = default)
@@ -59,8 +62,9 @@ public class ArticleCommandService
         article.Title = title.Trim();
         article.Content = content.Trim();
         article.ImageUrl = imageUrl?.Trim() ?? string.Empty;
+        article.ThumbnailUrl = thumbnailUrl?.Trim() ?? string.Empty;
         article.Writer = writer.Trim();
-        article.Category = category.Trim();
+        article.Category = NormalizeCategory(category);
         article.UpdatedAt = DateTime.UtcNow;
 
         await _db.SaveChangesAsync(cancellationToken);
@@ -95,4 +99,9 @@ public class ArticleCommandService
 
         return article;
     }
+
+    private static string NormalizeCategory(string category) =>
+        string.IsNullOrWhiteSpace(category)
+            ? string.Empty
+            : category.Trim().ToLowerInvariant();
 }

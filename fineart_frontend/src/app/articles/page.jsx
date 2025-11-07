@@ -1,109 +1,151 @@
-import Link from 'next/link';
+import ArticleCard from '@/components/articles/ArticleCard';
+import ArticleFilters from '@/components/articles/ArticleFilters';
+import ArticlePagination from '@/components/articles/ArticlePagination';
 import { getArticles } from '@/lib/api';
-
-const SERVER_OFFLINE_MESSAGE = '서버 점검 중입니다. 잠시 후 다시 시도해주세요.';
-
-const fallbackArticles = [
-  {
-    id: 'preview-1',
-    title: 'AI 컬렉터가 바꾸는 디지털 미술 경험',
-    content:
-      '몰입형 스크린과 생성형 렌더링이 결합한 새로운 전시 환경에서는 큐레이션의 기준 자체가 달라집니다. FineArt Lab이 시뮬레이션한 컬렉션 룸을 공개합니다.',
-    writer: 'FineArt Editorial',
-    category: '공지',
-    createdAt: '2025-11-05T00:00:00Z',
-  },
-  {
-    id: 'preview-2',
-    title: '서울 갤러리 위크, 놓치지 말아야 할 전시 5',
-    content:
-      '11월 첫째 주, 북촌에서 한남까지 이어지는 5개 갤러리를 연결한 도보 코스를 소개합니다. 동선을 따라가며 작가 인터뷰와 추천 작품을 만나보세요.',
-    writer: 'Lee ARA',
-    category: '정보',
-    createdAt: '2025-11-02T00:00:00Z',
-  },
-  {
-    id: 'preview-3',
-    title: '빛을 조립하는 작가, 김서연 인터뷰',
-    content:
-      '건축 설계에서 출발해 데이터로 빛을 기록하는 김서연 작가의 작업실을 찾았습니다. 최근 FineArt Residency에서 준비 중인 신작에 대해 이야기했습니다.',
-    writer: 'FineArt Lab',
-    category: '뉴스',
-    createdAt: '2025-10-28T00:00:00Z',
-  },
-];
-
-const normalizeArticles = (payload) => {
-  if (!payload) return [];
-  if (Array.isArray(payload)) return payload;
-  if (Array.isArray(payload.items)) return payload.items;
-  return [];
-};
-
-const formatDate = (value) => {
-  if (!value) return '';
-  try {
-    return new Date(value).toLocaleDateString('ko-KR');
-  } catch (error) {
-    return value;
-  }
-};
-
-const getExcerpt = (content) => {
-  if (!content) return '';
-  return content.length > 140 ? `${content.slice(0, 140)}…` : content;
-};
-
-async function loadArticles() {
-  try {
-    const payload = await getArticles();
-    const articles = normalizeArticles(payload);
-    return { articles, isFallback: false };
-  } catch (error) {
-    console.error('[Articles] Failed to fetch from API:', error);
-    return { articles: fallbackArticles, isFallback: true };
-  }
-}
 
 export const revalidate = 0;
 
-export default async function ArticlesPage() {
-  const { articles, isFallback } = await loadArticles();
+const CATEGORY_TABS = [
+  { value: '', label: '전체' },
+  { value: 'notice', label: '공지사항' },
+  { value: 'event', label: '이벤트' },
+  { value: 'free', label: '자유게시판' },
+];
+
+const FALLBACK_ARTICLES = [
+  {
+    id: 'seed-notice',
+    title: '서비스 오픈 안내',
+    content: 'FineArt 게시판 정식 오픈을 축하합니다. 새로운 공지와 전시 소식을 확인하세요.',
+    author: 'FineArt Admin',
+    category: 'notice',
+    createdAt: '2025-01-15T00:00:00Z',
+    thumbnailUrl: 'https://cdn.fineart.local/articles/notice-thumb.jpg',
+    imageUrl: 'https://cdn.fineart.local/articles/notice-hero.jpg',
+  },
+  {
+    id: 'seed-event',
+    title: '3월 라이브 옥션',
+    content: '프리미엄 작가 10인의 대표작을 소개합니다. 온라인 라이브로 참여하세요.',
+    author: 'Curator Team',
+    category: 'event',
+    createdAt: '2025-02-20T00:00:00Z',
+    thumbnailUrl: 'https://cdn.fineart.local/articles/event-thumb.jpg',
+    imageUrl: 'https://cdn.fineart.local/articles/event-hero.jpg',
+  },
+  {
+    id: 'seed-free',
+    title: '거장 추천 전시 5선',
+    content: '주말에 가기 좋은 전시들을 에디터가 직접 선정했습니다.',
+    author: 'Community Host',
+    category: 'free',
+    createdAt: '2025-03-03T00:00:00Z',
+    thumbnailUrl: 'https://cdn.fineart.local/articles/free-thumb.jpg',
+    imageUrl: 'https://cdn.fineart.local/articles/free-hero.jpg',
+  },
+];
+
+const normalizeArticle = (item, index) => {
+  if (!item) return null;
+  const images = Array.isArray(item.images) ? item.images : [];
+  return {
+    id: item.id ?? `article-${index}`,
+    title: item.title ?? '제목 미확인',
+    content: item.content ?? '',
+    author: item.author ?? item.writer ?? 'FineArt',
+    category: item.category ?? 'free',
+    createdAt: item.createdAt ?? new Date().toISOString(),
+    imageUrl: item.imageUrl ?? images[0] ?? null,
+    thumbnailUrl: item.thumbnailUrl ?? images[1] ?? item.imageUrl ?? null,
+    images,
+    views: item.views ?? 0,
+  };
+};
+
+const normalizeArticles = (payload) => {
+  if (!payload) return [];
+  if (Array.isArray(payload)) {
+    return payload.map(normalizeArticle).filter(Boolean);
+  }
+
+  if (Array.isArray(payload.items)) {
+    return payload.items.map(normalizeArticle).filter(Boolean);
+  }
+
+  return [];
+};
+
+const parseNumber = (value, fallback) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+};
+
+export default async function ArticlesPage({ searchParams }) {
+  const category = searchParams?.category ?? '';
+  const keyword = searchParams?.keyword ?? '';
+  const page = parseNumber(searchParams?.page, 1);
+  const size = parseNumber(searchParams?.size, 12);
+
+  let payload = null;
+  let isFallback = false;
+
+  try {
+    payload = await getArticles({
+      category: category || undefined,
+      keyword: keyword || undefined,
+      page,
+      size,
+    });
+  } catch (error) {
+    console.error('[Articles] Failed to fetch from API:', error);
+    isFallback = true;
+  }
+
+  const articles = normalizeArticles(payload ?? FALLBACK_ARTICLES);
+  const hasResults = articles.length > 0;
+
+  const meta = {
+    total: payload?.total ?? articles.length,
+    page: payload?.page ?? page,
+    size: payload?.size ?? size,
+  };
 
   return (
     <div className="screen-padding section mx-auto flex w-full max-w-6xl flex-col gap-10">
-      <header className="space-y-4">
-        <p className="text-sm uppercase tracking-[0.3em] text-neutral-500">Stories & Insights</p>
-        <h1 className="text-4xl font-semibold text-neutral-900">FineArt Articles</h1>
-        <p className="text-neutral-600">전시 리뷰, 시장 인사이트, 공지까지 통합 게시판에서 확인하세요.</p>
+      <header className="space-y-3">
+        <p className="text-sm uppercase tracking-[0.3em] text-neutral-500">Stories &amp; Insights</p>
+        <h1 className="text-4xl font-semibold text-neutral-900">FineArt 게시판</h1>
+        <p className="text-neutral-600">
+          공지, 이벤트, 자유게시판을 한 곳에서 확인하고 검색·필터링해 보세요.
+        </p>
         {isFallback && (
-          <p className="rounded-2xl bg-amber-50 px-4 py-2 text-xs text-amber-800">{SERVER_OFFLINE_MESSAGE}</p>
+          <p className="rounded-2xl bg-amber-50 px-4 py-2 text-xs text-amber-800">
+            서버 응답이 지연되어 샘플 데이터를 표시하고 있습니다.
+          </p>
         )}
       </header>
 
-      <section className="grid gap-6 md:grid-cols-2">
-        {articles.map((article) => (
-          <article
-            key={article.id}
-            className="flex flex-col gap-4 rounded-3xl border border-neutral-100 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:border-primary/50 hover:shadow-lg"
-          >
-            <div className="flex items-center justify-between text-xs text-neutral-400">
-              <span className="uppercase tracking-widest">{article.writer ?? 'FineArt'}</span>
-              <span>{formatDate(article.createdAt)}</span>
-            </div>
-            <h2 className="text-2xl font-semibold text-neutral-900">{article.title}</h2>
-            <p className="text-sm text-neutral-600">{getExcerpt(article.content)}</p>
-            <div className="flex items-center justify-between text-xs text-neutral-500">
-              <span className="rounded-full border border-neutral-200 px-3 py-1 text-[11px] uppercase tracking-widest">
-                {article.category ?? 'Article'}
-              </span>
-              <Link href={`/articles/${article.id}`} className="text-primary">
-                자세히 보기
-              </Link>
-            </div>
-          </article>
-        ))}
-      </section>
+      <ArticleFilters
+        categories={CATEGORY_TABS}
+        activeCategory={category}
+        initialKeyword={keyword}
+        pageSize={meta.size}
+      />
+
+      {!hasResults ? (
+        <div className="rounded-3xl border border-dashed border-neutral-200 bg-white p-10 text-center text-neutral-500">
+          조건에 해당하는 게시글이 없습니다. 다른 검색어나 카테고리를 선택해 보세요.
+        </div>
+      ) : (
+        <>
+          <section className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+            {articles.map((article) => (
+              <ArticleCard key={article.id} article={article} />
+            ))}
+          </section>
+          <ArticlePagination page={meta.page} size={meta.size} total={meta.total} />
+        </>
+      )}
     </div>
   );
 }
