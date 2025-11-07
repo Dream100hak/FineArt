@@ -10,6 +10,7 @@ public class AppDb : DbContext
 
     public DbSet<Artwork> Artworks => Set<Artwork>();
     public DbSet<Artist> Artists => Set<Artist>();
+    public DbSet<Article> Articles => Set<Article>();
     public DbSet<User> Users => Set<User>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -38,6 +39,17 @@ public class AppDb : DbContext
                 .WithMany(ar => ar.Artworks)
                 .HasForeignKey(a => a.ArtistId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<Article>(builder =>
+        {
+            builder.Property(a => a.Title).HasMaxLength(500);
+            builder.Property(a => a.Writer).HasMaxLength(128);
+            builder.Property(a => a.Category).HasMaxLength(64);
+            builder.Property(a => a.ImageUrl).HasMaxLength(2048);
+            builder.Property(a => a.Views).HasDefaultValue(0);
+            builder.HasIndex(a => a.Category).HasDatabaseName("idx_articles_category");
+            builder.HasIndex(a => a.CreatedAt).HasDatabaseName("idx_articles_created_at");
         });
     }
 }

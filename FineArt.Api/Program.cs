@@ -1,6 +1,7 @@
 ﻿using System.Text;
 using System.Text.Json;
 using FineArt.Api.Contracts;
+using FineArt.Application.Articles;
 using FineArt.Application.Artworks;
 using FineArt.Application.Auth;
 using FineArt.Infrastructure.Auth;
@@ -78,6 +79,8 @@ builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<DbContext>(sp => sp.GetRequiredService<AppDb>());
 builder.Services.AddScoped<ArtworkQueryService>();
 builder.Services.AddScoped<ArtworkCommandService>();
+builder.Services.AddScoped<ArticleQueryService>();
+builder.Services.AddScoped<ArticleCommandService>();
 
 builder.Services.AddCors(o => o.AddPolicy("react", p => p
     .WithOrigins("http://localhost:3000", "https://fineart.co.kr", "https://admin.fineart.co.kr")
@@ -129,6 +132,12 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDb>();
+    db.Database.Migrate();
+}
 
 app.UseCors("react");
 
