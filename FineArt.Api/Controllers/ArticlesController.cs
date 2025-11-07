@@ -49,7 +49,7 @@ public class ArticlesController : ControllerBase
 
         var responseItems = items.Select(a => new
         {
-            a.Id,
+            id = a.Id,
             a.Title,
             a.Content,
             Author = a.Writer,
@@ -67,7 +67,7 @@ public class ArticlesController : ControllerBase
         {
             total,
             page,
-            size,
+            size, responseItems,
             items = responseItems
         });
     }
@@ -84,7 +84,7 @@ public class ArticlesController : ControllerBase
 
         return Ok(new
         {
-            article.Id,
+            id = article.Id,
             article.Title,
             article.Content,
             Author = article.Writer,
@@ -123,7 +123,7 @@ public class ArticlesController : ControllerBase
 
         return CreatedAtAction(nameof(GetById), new { id = article.Id }, new
         {
-            article.Id,
+            id = article.Id,
             article.Title,
             article.Content,
             Author = article.Writer,
@@ -169,7 +169,7 @@ public class ArticlesController : ControllerBase
 
         return Ok(new
         {
-            article.Id,
+            id = article.Id,
             article.Title,
             article.Content,
             Author = article.Writer,

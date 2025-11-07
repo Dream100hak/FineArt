@@ -103,8 +103,15 @@ export const getArticles = (params = {}) =>
   );
 
 export const getArticleById = (id) => {
-  if (!id) throw new Error('Article id is required');
-  return request(() => api.get(`/api/articles/${id}`), 'GET /api/articles/:id');
+  const normalizedId =
+    typeof id === 'number' ? id.toString() : typeof id === 'string' ? id.trim() : '';
+
+  if (!normalizedId) {
+    console.warn('[API] getArticleById called without valid id:', id);
+    throw new Error('Article id is required');
+  }
+
+  return request(() => api.get(`/api/articles/${normalizedId}`), 'GET /api/articles/:id');
 };
 
 export const getArtists = () => request(() => api.get('/api/artists'), 'GET /api/artists');

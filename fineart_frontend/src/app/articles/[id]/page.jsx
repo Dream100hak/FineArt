@@ -4,6 +4,9 @@ import { getArticleById } from '@/lib/api';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
+export const dynamic = 'force-dynamic';
+export const dynamicParams = true;
+
 const SERVER_OFFLINE_MESSAGE = '서버 연결에 실패하여 샘플 데이터를 표시하고 있습니다.';
 
 const FALLBACK_ARTICLES = new Map([
@@ -72,11 +75,13 @@ const buildImages = (payload) => {
   return [...new Set([...images, ...fallback])];
 };
 
+const readArticleId = (payload) => payload?.id ?? payload?.Id ?? payload?.ID ?? null;
+
 const normalizeArticle = (payload) => {
   if (!payload) return null;
   const images = buildImages(payload);
   return {
-    id: payload.id,
+    id: readArticleId(payload),
     title: payload.title ?? '제목 미확인',
     content: payload.content ?? '',
     author: payload.author ?? payload.writer ?? 'FineArt',
@@ -100,8 +105,20 @@ async function loadArticle(id) {
   }
 }
 
-export default async function ArticleDetailPage({ params }) {
-  const { article, isFallback } = await loadArticle(params.id);
+export default async function ArticleDetailPage(props) {
+  const resolvedParams = await props.params;
+  const routeId =
+    typeof resolvedParams?.id === 'string'
+      ? resolvedParams.id
+      : Array.isArray(resolvedParams?.id)
+        ? resolvedParams.id[0]
+        : undefined;
+  if (!routeId) {
+    console.warn('[ArticleDetailPage] Missing route param id:', resolvedParams);
+    notFound();
+  }
+
+  const { article, isFallback } = await loadArticle(routeId);
 
   if (!article) {
     notFound();

@@ -27,7 +27,7 @@ const defaultForm = {
 };
 
 const normalizeArticle = (item) => ({
-  id: item.id,
+  id: item.id ?? item.Id ?? item.ID ?? null,
   title: item.title ?? '',
   content: item.content ?? '',
   writer: item.author ?? item.writer ?? '',

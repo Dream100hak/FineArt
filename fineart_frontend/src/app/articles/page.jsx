@@ -46,11 +46,16 @@ const FALLBACK_ARTICLES = [
   },
 ];
 
+const readArticleId = (item, fallback) => {
+  if (!item) return fallback;
+  return item.id ?? item.Id ?? item.ID ?? fallback;
+};
+
 const normalizeArticle = (item, index) => {
   if (!item) return null;
   const images = Array.isArray(item.images) ? item.images : [];
   return {
-    id: item.id ?? `article-${index}`,
+    id: readArticleId(item, `article-${index}`),
     title: item.title ?? '제목 미확인',
     content: item.content ?? '',
     author: item.author ?? item.writer ?? 'FineArt',
@@ -81,11 +86,12 @@ const parseNumber = (value, fallback) => {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 };
 
-export default async function ArticlesPage({ searchParams }) {
-  const category = searchParams?.category ?? '';
-  const keyword = searchParams?.keyword ?? '';
-  const page = parseNumber(searchParams?.page, 1);
-  const size = parseNumber(searchParams?.size, 12);
+export default async function ArticlesPage(props) {
+  const resolvedParams = await props.searchParams;
+  const category = resolvedParams?.category ?? '';
+  const keyword = resolvedParams?.keyword ?? '';
+  const page = parseNumber(resolvedParams?.page, 1);
+  const size = parseNumber(resolvedParams?.size, 12);
 
   let payload = null;
   let isFallback = false;
