@@ -1,4 +1,5 @@
 using System.IO;
+using FineArt.Api.Contracts;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -32,8 +33,10 @@ public class UploadsController : ControllerBase
     [HttpPost]
     [Authorize(Roles = "Admin")]
     [RequestSizeLimit(MaxFileSizeBytes)]
-    public async Task<IActionResult> Upload([FromForm] IFormFile file, CancellationToken cancellationToken)
+    [RequestFormLimits(MultipartBodyLengthLimit = MaxFileSizeBytes)]
+    public async Task<IActionResult> Upload([FromForm] UploadRequest uploadRequest, CancellationToken cancellationToken)
     {
+        var file = uploadRequest.File;
         if (file is null || file.Length == 0)
         {
             return BadRequest(new { message = "업로드할 파일이 필요합니다." });
@@ -67,8 +70,8 @@ public class UploadsController : ControllerBase
             await file.CopyToAsync(stream, cancellationToken);
         }
 
-        var request = HttpContext.Request;
-        var baseUrl = $"{request.Scheme}://{request.Host}";
+        var httpRequest = HttpContext.Request;
+        var baseUrl = $"{httpRequest.Scheme}://{httpRequest.Host}";
         var url = $"{baseUrl}/uploads/{fileName}";
 
         _logger.LogInformation("Uploaded file {FileName} ({Size} bytes)", fileName, file.Length);

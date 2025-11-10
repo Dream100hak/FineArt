@@ -118,6 +118,30 @@ export const getArtists = () => request(() => api.get('/api/artists'), 'GET /api
 
 export const getArtworks = () => request(() => api.get('/api/artworks'), 'GET /api/artworks');
 
+export const getExhibitions = (params = {}) =>
+  request(
+    () =>
+      api.get('/api/exhibitions', {
+        params: sanitizeParams(params),
+      }),
+    'GET /api/exhibitions',
+  );
+
+export const getExhibitionById = (id) => {
+  const normalizedId =
+    typeof id === 'number' ? id.toString() : typeof id === 'string' ? id.trim() : '';
+
+  if (!normalizedId) {
+    console.warn('[API] getExhibitionById called without valid id:', id);
+    throw new Error('Exhibition id is required');
+  }
+
+  return request(
+    () => api.get(`/api/exhibitions/${normalizedId}`),
+    'GET /api/exhibitions/:id',
+  );
+};
+
 export const createArticle = (payload) =>
   request(() => api.post('/api/articles', payload), 'POST /api/articles');
 
@@ -129,6 +153,25 @@ export const updateArticle = (id, payload) => {
 export const deleteArticle = (id) => {
   if (!id) throw new Error('Article id is required');
   return request(() => api.delete(`/api/articles/${id}`), 'DELETE /api/articles/:id');
+};
+
+export const createExhibition = (payload) =>
+  request(() => api.post('/api/exhibitions', payload), 'POST /api/exhibitions');
+
+export const updateExhibition = (id, payload) => {
+  if (!id) throw new Error('Exhibition id is required');
+  return request(
+    () => api.put(`/api/exhibitions/${id}`, payload),
+    'PUT /api/exhibitions/:id',
+  );
+};
+
+export const deleteExhibition = (id) => {
+  if (!id) throw new Error('Exhibition id is required');
+  return request(
+    () => api.delete(`/api/exhibitions/${id}`),
+    'DELETE /api/exhibitions/:id',
+  );
 };
 
 export const uploadArticleImage = (file, fieldName = 'file') => {

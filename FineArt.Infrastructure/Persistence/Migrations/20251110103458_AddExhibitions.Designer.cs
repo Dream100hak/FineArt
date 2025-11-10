@@ -4,16 +4,19 @@ using FineArt.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
 
-namespace FineArt.Infrastructure.Migrations
+namespace FineArt.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(AppDb))]
-    partial class AppDbModelSnapshot : ModelSnapshot
+    [Migration("20251110103458_AddExhibitions")]
+    partial class AddExhibitions
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -256,149 +259,6 @@ namespace FineArt.Infrastructure.Migrations
                             Location = "FineArt Gallery",
                             StartDate = new DateTime(2025, 5, 2, 0, 0, 0, 0, DateTimeKind.Utc),
                             Title = "Warm Mineral"
-                        },
-                        new
-                        {
-                            Id = 4,
-                            Artist = "서이현",
-                            Category = "Solo",
-                            CreatedAt = new DateTime(2025, 1, 28, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "은은한 빛으로 숨 쉬는 인터랙티브 식물 설치. 관람자의 움직임에 따라 잎맥이 발광합니다.",
-                            EndDate = new DateTime(2025, 7, 8, 0, 0, 0, 0, DateTimeKind.Utc),
-                            ImageUrl = "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=2000&q=80",
-                            Location = "FineArt Green Room",
-                            StartDate = new DateTime(2025, 3, 10, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Title = "Luminary Garden"
-                        },
-                        new
-                        {
-                            Id = 5,
-                            Artist = "Collective Prism",
-                            Category = "Group",
-                            CreatedAt = new DateTime(2025, 2, 3, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "수평선처럼 펼쳐지는 색면 미디어. 8K 레이어가 시간에 따라 서서히 이동합니다.",
-                            EndDate = new DateTime(2025, 10, 4, 0, 0, 0, 0, DateTimeKind.Utc),
-                            ImageUrl = "https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=2000&q=80",
-                            Location = "FineArt Cube",
-                            StartDate = new DateTime(2025, 6, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Title = "Chromatic Drift"
-                        },
-                        new
-                        {
-                            Id = 6,
-                            Artist = "이마루 & 윤채",
-                            Category = "Group",
-                            CreatedAt = new DateTime(2025, 2, 12, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "도자기 조각 위에 프로젝션 맵핑을 입혀 소리와 색이 울리는 설치전.",
-                            EndDate = new DateTime(2025, 9, 19, 0, 0, 0, 0, DateTimeKind.Utc),
-                            ImageUrl = "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=2000&q=80",
-                            Location = "FineArt Atelier",
-                            StartDate = new DateTime(2025, 4, 5, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Title = "Echoes of Clay"
-                        },
-                        new
-                        {
-                            Id = 7,
-                            Artist = "Studio Nabile",
-                            Category = "Digital",
-                            CreatedAt = new DateTime(2025, 3, 8, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "공간 전체를 사용하는 270도 홀로그램 연출과 클래식 사운드의 만남.",
-                            EndDate = new DateTime(2026, 1, 12, 0, 0, 0, 0, DateTimeKind.Utc),
-                            ImageUrl = "https://images.unsplash.com/photo-1482192505345-5655af888cc4?auto=format&fit=crop&w=2000&q=80",
-                            Location = "FineArt Dome",
-                            StartDate = new DateTime(2025, 8, 15, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Title = "Hologram Opera"
-                        },
-                        new
-                        {
-                            Id = 8,
-                            Artist = "린다 베르그",
-                            Category = "Solo",
-                            CreatedAt = new DateTime(2025, 4, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "극지방의 빛을 기록한 사진과 사운드 아카이브를 immersive 환경으로 재현.",
-                            EndDate = new DateTime(2026, 2, 20, 0, 0, 0, 0, DateTimeKind.Utc),
-                            ImageUrl = "https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=2000&q=80",
-                            Location = "FineArt Vault",
-                            StartDate = new DateTime(2025, 9, 20, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Title = "Northbound Light"
-                        },
-                        new
-                        {
-                            Id = 9,
-                            Artist = "Paper Assembly",
-                            Category = "Installation",
-                            CreatedAt = new DateTime(2025, 4, 10, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "거대한 종이 구조물을 쌓아 도시 풍경을 재구성하는 설치 프로젝트.",
-                            EndDate = new DateTime(2025, 11, 30, 0, 0, 0, 0, DateTimeKind.Utc),
-                            ImageUrl = "https://images.unsplash.com/photo-1489515217757-5fd1be406fef?auto=format&fit=crop&w=2000&q=80",
-                            Location = "FineArt Warehouse",
-                            StartDate = new DateTime(2025, 5, 18, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Title = "Paper Tectonics"
-                        },
-                        new
-                        {
-                            Id = 10,
-                            Artist = "Co.studio Bloom",
-                            Category = "Installation",
-                            CreatedAt = new DateTime(2025, 4, 18, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "향과 빛, 사운드를 결합해 계절의 변화를 체험하게 하는 몰입형 정원.",
-                            EndDate = new DateTime(2025, 12, 5, 0, 0, 0, 0, DateTimeKind.Utc),
-                            ImageUrl = "https://images.unsplash.com/photo-1493663284031-b7e3aefcae8e?auto=format&fit=crop&w=2000&q=80",
-                            Location = "FineArt Pavilion",
-                            StartDate = new DateTime(2025, 7, 2, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Title = "Sensorial Bloom"
-                        },
-                        new
-                        {
-                            Id = 11,
-                            Artist = "장도현",
-                            Category = "Digital",
-                            CreatedAt = new DateTime(2025, 5, 6, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "레이저 스캔으로 기록한 도시의 잔상을 데이터 조각으로 시각화.",
-                            EndDate = new DateTime(2026, 3, 14, 0, 0, 0, 0, DateTimeKind.Utc),
-                            ImageUrl = "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=2000&q=80",
-                            Location = "FineArt Research Lab",
-                            StartDate = new DateTime(2025, 10, 8, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Title = "Afterimage Waves"
-                        },
-                        new
-                        {
-                            Id = 12,
-                            Artist = "FineArt Robot Lab",
-                            Category = "Group",
-                            CreatedAt = new DateTime(2025, 5, 20, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "수장고에서 꺼낸 모듈 조각을 로봇 암으로 재배열하는 라이브 퍼포먼스.",
-                            EndDate = new DateTime(2026, 4, 25, 0, 0, 0, 0, DateTimeKind.Utc),
-                            ImageUrl = "https://images.unsplash.com/photo-1475688621402-4257a8543cfe?auto=format&fit=crop&w=2000&q=80",
-                            Location = "FineArt Machine Room",
-                            StartDate = new DateTime(2025, 11, 12, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Title = "Kinetic Archive"
-                        },
-                        new
-                        {
-                            Id = 13,
-                            Artist = "Atmos Lab",
-                            Category = "Installation",
-                            CreatedAt = new DateTime(2025, 5, 28, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "안개를 분사하는 대형 지도 구조와 프로젝션을 결합해 도시 기후를 표현.",
-                            EndDate = new DateTime(2025, 9, 30, 0, 0, 0, 0, DateTimeKind.Utc),
-                            ImageUrl = "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=2000&q=80",
-                            Location = "FineArt Plaza",
-                            StartDate = new DateTime(2025, 6, 25, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Title = "Mist City Atlas"
-                        },
-                        new
-                        {
-                            Id = 14,
-                            Artist = "Mira Collective",
-                            Category = "Digital",
-                            CreatedAt = new DateTime(2025, 6, 8, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "수중 녹음을 재구성한 사운드 인스톨레이션과 빛의 파동 퍼포먼스.",
-                            EndDate = new DateTime(2026, 5, 10, 0, 0, 0, 0, DateTimeKind.Utc),
-                            ImageUrl = "https://images.unsplash.com/photo-1475694867812-f82b8696d610?auto=format&fit=crop&w=2000&q=80",
-                            Location = "FineArt Hall B1",
-                            StartDate = new DateTime(2025, 12, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Title = "Aquifer Chorus"
                         });
                 });
 

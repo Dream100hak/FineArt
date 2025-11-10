@@ -4,6 +4,7 @@ using FineArt.Api.Contracts;
 using FineArt.Application.Articles;
 using FineArt.Application.Artworks;
 using FineArt.Application.Auth;
+using FineArt.Application.Exhibitions;
 using FineArt.Infrastructure.Auth;
 using FineArt.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -81,6 +82,8 @@ builder.Services.AddScoped<ArtworkQueryService>();
 builder.Services.AddScoped<ArtworkCommandService>();
 builder.Services.AddScoped<ArticleQueryService>();
 builder.Services.AddScoped<ArticleCommandService>();
+builder.Services.AddScoped<ExhibitionQueryService>();
+builder.Services.AddScoped<ExhibitionCommandService>();
 
 builder.Services.AddCors(o => o.AddPolicy("react", p => p
     .WithOrigins("http://localhost:3000", "http://localhost:3001", "https://fineart.co.kr", "https://admin.fineart.co.kr")
