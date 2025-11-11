@@ -116,7 +116,25 @@ export const getArticleById = (id) => {
 
 export const getArtists = () => request(() => api.get('/api/artists'), 'GET /api/artists');
 
-export const getArtworks = () => request(() => api.get('/api/artworks'), 'GET /api/artworks');
+export const getArtworks = (params = {}) =>
+  request(
+    () =>
+      api.get('/api/artworks', {
+        params: sanitizeParams(params),
+      }),
+    'GET /api/artworks',
+  );
+
+export const getArtworkById = (id) => {
+  const normalizedId =
+    typeof id === 'number' ? id.toString() : typeof id === 'string' ? id.trim() : '';
+
+  if (!normalizedId) {
+    throw new Error('Artwork id is required');
+  }
+
+  return request(() => api.get(`/api/artworks/${normalizedId}`), 'GET /api/artworks/:id');
+};
 
 export const getExhibitions = (params = {}) =>
   request(

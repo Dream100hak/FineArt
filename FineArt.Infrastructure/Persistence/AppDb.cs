@@ -30,16 +30,437 @@ public class AppDb : DbContext
             builder.Property(a => a.Name).HasMaxLength(200);
             builder.Property(a => a.Nationality).HasMaxLength(100);
             builder.Property(a => a.ImageUrl).HasMaxLength(1024);
+
+            var artistSeedTimestamp = DateTime.SpecifyKind(new DateTime(2024, 11, 1), DateTimeKind.Utc);
+            builder.HasData(
+                new Artist
+                {
+                    Id = 1001,
+                    Name = "미나 허",
+                    Bio = "빛과 도시를 주제로 한 뉴미디어 설치·회화 작가.",
+                    Nationality = "대한민국",
+                    ImageUrl = "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=800&q=80",
+                    CreatedAt = artistSeedTimestamp
+                },
+                new Artist
+                {
+                    Id = 1002,
+                    Name = "라텍스 듀오",
+                    Bio = "물성과 색채 실험을 지속하는 2인 페인팅 그룹.",
+                    Nationality = "대한민국",
+                    ImageUrl = "https://images.unsplash.com/photo-1475688621402-4257f5b911ef?auto=format&fit=crop&w=800&q=80",
+                    CreatedAt = artistSeedTimestamp
+                },
+                new Artist
+                {
+                    Id = 1003,
+                    Name = "이수현",
+                    Bio = "공간과 공감을 탐구하는 혼합재료 작가.",
+                    Nationality = "대한민국",
+                    ImageUrl = "https://images.unsplash.com/photo-1504593811423-6dd665756598?auto=format&fit=crop&w=800&q=80",
+                    CreatedAt = artistSeedTimestamp
+                },
+                new Artist
+                {
+                    Id = 1004,
+                    Name = "서현 리",
+                    Bio = "도시 속 자연을 포착하는 수채 기반 작가.",
+                    Nationality = "대한민국",
+                    ImageUrl = "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=800&q=80",
+                    CreatedAt = artistSeedTimestamp
+                },
+                new Artist
+                {
+                    Id = 1005,
+                    Name = "이안 최",
+                    Bio = "사운드와 색을 결합한 추상 회화 실험자.",
+                    Nationality = "대한민국",
+                    ImageUrl = "https://images.unsplash.com/photo-1462219184705-54ee45569803?auto=format&fit=crop&w=800&q=80",
+                    CreatedAt = artistSeedTimestamp
+                },
+                new Artist
+                {
+                    Id = 1006,
+                    Name = "윤세라",
+                    Bio = "식물성과 감각을 섬세한 레이어로 확장한다.",
+                    Nationality = "대한민국",
+                    ImageUrl = "https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=800&q=80",
+                    CreatedAt = artistSeedTimestamp
+                },
+                new Artist
+                {
+                    Id = 1007,
+                    Name = "루시 박",
+                    Bio = "도시 풍경을 시네마틱 색감으로 재해석.",
+                    Nationality = "대한민국",
+                    ImageUrl = "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=801&q=80",
+                    CreatedAt = artistSeedTimestamp
+                },
+                new Artist
+                {
+                    Id = 1008,
+                    Name = "김이노",
+                    Bio = "차분한 색면으로 빛의 변주를 연주하는 작가.",
+                    Nationality = "대한민국",
+                    ImageUrl = "https://images.unsplash.com/photo-1544723795-3fb6469f5b39?auto=format&fit=crop&w=800&q=80",
+                    CreatedAt = artistSeedTimestamp
+                },
+                new Artist
+                {
+                    Id = 1009,
+                    Name = "에바 장",
+                    Bio = "우주적 상상력을 그래픽 라인으로 기록.",
+                    Nationality = "대한민국",
+                    ImageUrl = "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=801&q=80",
+                    CreatedAt = artistSeedTimestamp
+                },
+                new Artist
+                {
+                    Id = 1010,
+                    Name = "박유성",
+                    Bio = "대형 캔버스에서 조명과 음향을 회화화한다.",
+                    Nationality = "대한민국",
+                    ImageUrl = "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=802&q=80",
+                    CreatedAt = artistSeedTimestamp
+                });
         });
 
         modelBuilder.Entity<Artwork>(builder =>
         {
+            builder.Property(a => a.Title).HasMaxLength(255).IsRequired();
+            builder.Property(a => a.ArtistDisplayName)
+                .HasColumnName("Artist")
+                .HasMaxLength(255)
+                .IsRequired();
+            builder.Property(a => a.Description).HasColumnType("longtext");
+            builder.Property(a => a.MainTheme).HasMaxLength(100);
+            builder.Property(a => a.SubTheme).HasMaxLength(100);
+            builder.Property(a => a.Size).HasMaxLength(100);
+            builder.Property(a => a.Material).HasMaxLength(100);
+            builder.Property(a => a.ImageUrl).HasMaxLength(500);
+            builder.Property(a => a.IsRentable).HasDefaultValue(false);
+            builder.Property(a => a.RentPrice).HasColumnType("int");
+            builder.Property(a => a.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP(6)");
+            builder.Property(a => a.UpdatedAt)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP(6)")
+                .ValueGeneratedOnAddOrUpdate();
+
             builder.HasIndex(a => a.Price).HasDatabaseName("idx_artwork_price");
             builder.HasIndex(a => a.CreatedAt).HasDatabaseName("idx_artwork_created_at");
+            builder.HasIndex(a => a.MainTheme).HasDatabaseName("idx_artwork_theme");
+            builder.HasIndex(a => a.Status).HasDatabaseName("idx_artwork_status");
+
             builder.HasOne(a => a.Artist)
                 .WithMany(ar => ar.Artworks)
                 .HasForeignKey(a => a.ArtistId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            var artworkSeedTimestamp = DateTime.SpecifyKind(new DateTime(2024, 11, 5), DateTimeKind.Utc);
+            builder.HasData(
+                new Artwork
+                {
+                    Id = 1,
+                    Title = "Seoul Lightscape",
+                    ArtistId = 1001,
+                    ArtistDisplayName = "미나 허",
+                    Description = "서울의 야경을 아크릴 레이어로 재해석한 시티 캔버스.",
+                    MainTheme = "풍경",
+                    SubTheme = "도시 조명",
+                    Size = "91x117cm · 80호 이상",
+                    Material = "아크릴",
+                    Price = 2_900_000,
+                    IsRentable = true,
+                    RentPrice = 480_000,
+                    ImageUrl = "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=1200&q=80",
+                    Status = ArtworkStatus.Rentable,
+                    CreatedAt = artworkSeedTimestamp,
+                    UpdatedAt = artworkSeedTimestamp
+                },
+                new Artwork
+                {
+                    Id = 2,
+                    Title = "Warm Mineral",
+                    ArtistId = 1002,
+                    ArtistDisplayName = "라텍스 듀오",
+                    Description = "광물성 안료가 겹겹이 쌓여 만들어낸 열감 있는 추상 회화.",
+                    MainTheme = "추상",
+                    SubTheme = "감각",
+                    Size = "73x91cm · 30호~50호",
+                    Material = "유화",
+                    Price = 1_800_000,
+                    IsRentable = false,
+                    RentPrice = null,
+                    ImageUrl = "https://images.unsplash.com/photo-1472214103451-9374bd1c798e?auto=format&fit=crop&w=1200&q=80",
+                    Status = ArtworkStatus.ForSale,
+                    CreatedAt = artworkSeedTimestamp,
+                    UpdatedAt = artworkSeedTimestamp
+                },
+                new Artwork
+                {
+                    Id = 3,
+                    Title = "Void Ink - Capsule",
+                    ArtistId = 1003,
+                    ArtistDisplayName = "이수현",
+                    Description = "잉크와 혼합재료로 공간감과 몰입을 강조한 시리즈.",
+                    MainTheme = "상상",
+                    SubTheme = "미래 공간",
+                    Size = "100x100cm · 50호~80호",
+                    Material = "혼합재료",
+                    Price = 4_200_000,
+                    IsRentable = false,
+                    RentPrice = null,
+                    ImageUrl = "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=80",
+                    Status = ArtworkStatus.ForSale,
+                    CreatedAt = artworkSeedTimestamp,
+                    UpdatedAt = artworkSeedTimestamp
+                },
+                new Artwork
+                {
+                    Id = 4,
+                    Title = "Amber Bloom",
+                    ArtistId = 1004,
+                    ArtistDisplayName = "서현 리",
+                    Description = "새벽빛을 머금은 작은 화병의 따스한 색감을 수채층으로 담았다.",
+                    MainTheme = "정물",
+                    SubTheme = "플로럴",
+                    Size = "45x53cm · 15호",
+                    Material = "수채",
+                    Price = 620_000,
+                    IsRentable = true,
+                    RentPrice = 150_000,
+                    ImageUrl = "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=1000&q=80",
+                    Status = ArtworkStatus.Rentable,
+                    CreatedAt = artworkSeedTimestamp,
+                    UpdatedAt = artworkSeedTimestamp
+                },
+                new Artwork
+                {
+                    Id = 5,
+                    Title = "Midnight Current",
+                    ArtistId = 1005,
+                    ArtistDisplayName = "이안 최",
+                    Description = "전자음과 파도 소리를 시각화한 네온 스트로크.",
+                    MainTheme = "상상",
+                    SubTheme = "사운드 파동",
+                    Size = "120x80cm · 60호",
+                    Material = "혼합재료",
+                    Price = 2_800_000,
+                    IsRentable = false,
+                    RentPrice = null,
+                    ImageUrl = "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=1200&q=80",
+                    Status = ArtworkStatus.ForSale,
+                    CreatedAt = artworkSeedTimestamp,
+                    UpdatedAt = artworkSeedTimestamp
+                },
+                new Artwork
+                {
+                    Id = 6,
+                    Title = "Botanic Whisper",
+                    ArtistId = 1006,
+                    ArtistDisplayName = "윤세라",
+                    Description = "유리 온실 속 증기를 연두빛 레이어로 번지게 했다.",
+                    MainTheme = "정물",
+                    SubTheme = "보타닉",
+                    Size = "80x60cm · 25호",
+                    Material = "아크릴",
+                    Price = 1_250_000,
+                    IsRentable = true,
+                    RentPrice = 320_000,
+                    ImageUrl = "https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=1200&q=80",
+                    Status = ArtworkStatus.Rentable,
+                    CreatedAt = artworkSeedTimestamp,
+                    UpdatedAt = artworkSeedTimestamp
+                },
+                new Artwork
+                {
+                    Id = 7,
+                    Title = "Horizon Pulse",
+                    ArtistId = 1001,
+                    ArtistDisplayName = "미나 허",
+                    Description = "레이저 빛의 간격으로 만들어낸 지평선의 박동.",
+                    MainTheme = "풍경",
+                    SubTheme = "지평선",
+                    Size = "100x60cm · 40호",
+                    Material = "아크릴",
+                    Price = 3_400_000,
+                    IsRentable = false,
+                    RentPrice = null,
+                    ImageUrl = "https://images.unsplash.com/photo-1500534312200-a16b66c0f3b9?auto=format&fit=crop&w=1200&q=80",
+                    Status = ArtworkStatus.ForSale,
+                    CreatedAt = artworkSeedTimestamp,
+                    UpdatedAt = artworkSeedTimestamp
+                },
+                new Artwork
+                {
+                    Id = 8,
+                    Title = "Cerulean Memoir",
+                    ArtistId = 1005,
+                    ArtistDisplayName = "이안 최",
+                    Description = "대양의 층위를 곡선 스트로크로 덧칠한 추상 회고록.",
+                    MainTheme = "추상",
+                    SubTheme = "해양",
+                    Size = "91x91cm · 50호",
+                    Material = "유화",
+                    Price = 2_050_000,
+                    IsRentable = false,
+                    RentPrice = null,
+                    ImageUrl = "https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=1200&q=81",
+                    Status = ArtworkStatus.Sold,
+                    CreatedAt = artworkSeedTimestamp,
+                    UpdatedAt = artworkSeedTimestamp
+                },
+                new Artwork
+                {
+                    Id = 9,
+                    Title = "Dusty Pink Alley",
+                    ArtistId = 1007,
+                    ArtistDisplayName = "루시 박",
+                    Description = "해질녘 골목의 분홍빛 공기를 영화 스틸컷처럼 구현했다.",
+                    MainTheme = "풍경",
+                    SubTheme = "도시 산책",
+                    Size = "73x91cm · 30호~50호",
+                    Material = "아크릴",
+                    Price = 1_450_000,
+                    IsRentable = true,
+                    RentPrice = 360_000,
+                    ImageUrl = "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=1200&q=81",
+                    Status = ArtworkStatus.Rentable,
+                    CreatedAt = artworkSeedTimestamp,
+                    UpdatedAt = artworkSeedTimestamp
+                },
+                new Artwork
+                {
+                    Id = 10,
+                    Title = "Northern Quiet",
+                    ArtistId = 1008,
+                    ArtistDisplayName = "김이노",
+                    Description = "밤 설원을 미드나잇 블루와 차콜 그라데이션으로 표현.",
+                    MainTheme = "풍경",
+                    SubTheme = "설경",
+                    Size = "130x97cm · 80호 이상",
+                    Material = "유화",
+                    Price = 3_900_000,
+                    IsRentable = false,
+                    RentPrice = null,
+                    ImageUrl = "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=1100&q=80",
+                    Status = ArtworkStatus.ForSale,
+                    CreatedAt = artworkSeedTimestamp,
+                    UpdatedAt = artworkSeedTimestamp
+                },
+                new Artwork
+                {
+                    Id = 11,
+                    Title = "Glass Reef",
+                    ArtistId = 1003,
+                    ArtistDisplayName = "이수현",
+                    Description = "수중 생명체를 유리조각처럼 절제된 라인으로 묘사.",
+                    MainTheme = "동물",
+                    SubTheme = "수중",
+                    Size = "88x60cm · 25호",
+                    Material = "혼합재료",
+                    Price = 1_980_000,
+                    IsRentable = true,
+                    RentPrice = 420_000,
+                    ImageUrl = "https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=1100&q=80",
+                    Status = ArtworkStatus.Rentable,
+                    CreatedAt = artworkSeedTimestamp,
+                    UpdatedAt = artworkSeedTimestamp
+                },
+                new Artwork
+                {
+                    Id = 12,
+                    Title = "Orbit Sketch",
+                    ArtistId = 1009,
+                    ArtistDisplayName = "에바 장",
+                    Description = "궤도를 따라 움직이는 점과 선의 모션을 모노라인으로 기록.",
+                    MainTheme = "상상",
+                    SubTheme = "우주",
+                    Size = "60x60cm · 20호",
+                    Material = "드로잉",
+                    Price = 780_000,
+                    IsRentable = true,
+                    RentPrice = 190_000,
+                    ImageUrl = "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=1000&q=80",
+                    Status = ArtworkStatus.Rentable,
+                    CreatedAt = artworkSeedTimestamp,
+                    UpdatedAt = artworkSeedTimestamp
+                },
+                new Artwork
+                {
+                    Id = 13,
+                    Title = "Velvet Stillness",
+                    ArtistId = 1006,
+                    ArtistDisplayName = "윤세라",
+                    Description = "깊은 녹색과 자주색을 벨벳처럼 번지게 한 정물 연작.",
+                    MainTheme = "정물",
+                    SubTheme = "텍스타일",
+                    Size = "92x60cm · 30호",
+                    Material = "오일파스텔",
+                    Price = 1_120_000,
+                    IsRentable = false,
+                    RentPrice = null,
+                    ImageUrl = "https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=900&q=80",
+                    Status = ArtworkStatus.Sold,
+                    CreatedAt = artworkSeedTimestamp,
+                    UpdatedAt = artworkSeedTimestamp
+                },
+                new Artwork
+                {
+                    Id = 14,
+                    Title = "Luminous Stage",
+                    ArtistId = 1010,
+                    ArtistDisplayName = "박유성",
+                    Description = "공연장의 조명과 음향 파형을 다층 레이어로 시각화.",
+                    MainTheme = "추상",
+                    SubTheme = "공연장",
+                    Size = "162x112cm · 120호",
+                    Material = "아크릴",
+                    Price = 5_400_000,
+                    IsRentable = true,
+                    RentPrice = 720_000,
+                    ImageUrl = "https://images.unsplash.com/photo-1472214103451-9374bd1c798e?auto=format&fit=crop&w=1300&q=80",
+                    Status = ArtworkStatus.Rentable,
+                    CreatedAt = artworkSeedTimestamp,
+                    UpdatedAt = artworkSeedTimestamp
+                },
+                new Artwork
+                {
+                    Id = 15,
+                    Title = "Prism Garden",
+                    ArtistId = 1004,
+                    ArtistDisplayName = "서현 리",
+                    Description = "햇살을 받아 분해되는 프리즘 정원을 색면으로 나눴다.",
+                    MainTheme = "정물",
+                    SubTheme = "정원",
+                    Size = "80x100cm · 50호",
+                    Material = "수채",
+                    Price = 1_650_000,
+                    IsRentable = false,
+                    RentPrice = null,
+                    ImageUrl = "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=1150&q=80",
+                    Status = ArtworkStatus.ForSale,
+                    CreatedAt = artworkSeedTimestamp,
+                    UpdatedAt = artworkSeedTimestamp
+                },
+                new Artwork
+                {
+                    Id = 16,
+                    Title = "Analog Dawn",
+                    ArtistId = 1008,
+                    ArtistDisplayName = "김이노",
+                    Description = "라디오 노이즈와 새벽빛의 색조를 결합한 색면 회화.",
+                    MainTheme = "추상",
+                    SubTheme = "새벽",
+                    Size = "116x89cm · 60호",
+                    Material = "유화",
+                    Price = 2_600_000,
+                    IsRentable = true,
+                    RentPrice = 500_000,
+                    ImageUrl = "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=1180&q=80",
+                    Status = ArtworkStatus.ForSale,
+                    CreatedAt = artworkSeedTimestamp,
+                    UpdatedAt = artworkSeedTimestamp
+                });
         });
 
         modelBuilder.Entity<Article>(builder =>

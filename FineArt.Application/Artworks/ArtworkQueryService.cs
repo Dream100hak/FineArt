@@ -8,12 +8,16 @@ public class ArtworkQueryService
     public async Task<(IReadOnlyList<Artwork> Items, int TotalCount)> QueryAsync(
         IQueryable<Artwork> source,
         string? keyword,
+        string? theme,
+        string? sizeFilter,
+        string? material,
+        bool? rentableOnly,
         int? priceMin,
         int? priceMax,
         string? status,
         string? sort,
         int page,
-        int size,
+        int pageSize,
         CancellationToken cancellationToken = default)
     {
         if (page < 1)
@@ -21,17 +25,26 @@ public class ArtworkQueryService
             page = 1;
         }
 
-        if (size < 1)
+        if (pageSize < 1)
         {
-            size = 10;
+            pageSize = 12;
         }
 
-        var filtered = ApplyFilters(source, keyword, priceMin, priceMax, status);
+        var filtered = ApplyFilters(
+            source,
+            keyword,
+            theme,
+            sizeFilter,
+            material,
+            rentableOnly,
+            priceMin,
+            priceMax,
+            status);
         var totalCount = await filtered.CountAsync(cancellationToken);
 
         var ordered = ApplySort(filtered, sort);
-        var skip = (page - 1) * size;
-        var items = await ordered.Skip(skip).Take(size).ToListAsync(cancellationToken);
+        var skip = (page - 1) * pageSize;
+        var items = await ordered.Skip(skip).Take(pageSize).ToListAsync(cancellationToken);
 
         return (items, totalCount);
     }
@@ -39,6 +52,10 @@ public class ArtworkQueryService
     private static IQueryable<Artwork> ApplyFilters(
         IQueryable<Artwork> query,
         string? keyword,
+        string? theme,
+        string? sizeFilter,
+        string? material,
+        bool? rentableOnly,
         int? priceMin,
         int? priceMax,
         string? status)
@@ -46,7 +63,39 @@ public class ArtworkQueryService
         if (!string.IsNullOrWhiteSpace(keyword))
         {
             var term = keyword.Trim();
-            query = query.Where(a => a.Title.Contains(term));
+            query = query.Where(a =>
+                a.Title.Contains(term) ||
+                a.ArtistDisplayName.Contains(term) ||
+                a.Description.Contains(term));
+        }
+
+        if (!string.IsNullOrWhiteSpace(theme))
+        {
+            var normalizedTheme = theme.Trim();
+            query = query.Where(a => a.MainTheme == normalizedTheme);
+        }
+
+        if (!string.IsNullOrWhiteSpace(sizeFilter))
+        {
+            var normalizedSize = sizeFilter.Trim();
+            query = query.Where(a => a.Size.Contains(normalizedSize));
+        }
+
+        if (!string.IsNullOrWhiteSpace(material))
+        {
+            var normalizedMaterials = material
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            if (normalizedMaterials.Count > 0)
+            {
+                query = query.Where(a => normalizedMaterials.Contains(a.Material));
+            }
+        }
+
+        if (rentableOnly.HasValue)
+        {
+            query = query.Where(a => a.IsRentable == rentableOnly.Value);
         }
 
         if (priceMin.HasValue)

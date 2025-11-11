@@ -4,16 +4,19 @@ using FineArt.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
 
-namespace FineArt.Infrastructure.Migrations
+namespace FineArt.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(AppDb))]
-    partial class AppDbModelSnapshot : ModelSnapshot
+    [Migration("20251111065719_InitAppDb")]
+    partial class InitAppDb
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -114,6 +117,35 @@ namespace FineArt.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Artists");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1001,
+                            Bio = "빛과 도시를 주제로 한 뉴미디어 설치·회화 작가.",
+                            CreatedAt = new DateTime(2024, 11, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            ImageUrl = "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=800&q=80",
+                            Name = "미나 허",
+                            Nationality = "대한민국"
+                        },
+                        new
+                        {
+                            Id = 1002,
+                            Bio = "물성과 색채 실험을 지속하는 2인 페인팅 그룹.",
+                            CreatedAt = new DateTime(2024, 11, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            ImageUrl = "https://images.unsplash.com/photo-1475688621402-4257f5b911ef?auto=format&fit=crop&w=800&q=80",
+                            Name = "라텍스 듀오",
+                            Nationality = "대한민국"
+                        },
+                        new
+                        {
+                            Id = 1003,
+                            Bio = "공간과 공감을 탐구하는 혼합재료 작가.",
+                            CreatedAt = new DateTime(2024, 11, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            ImageUrl = "https://images.unsplash.com/photo-1504593811423-6dd665756598?auto=format&fit=crop&w=800&q=80",
+                            Name = "이수현",
+                            Nationality = "대한민국"
+                        });
                 });
 
             modelBuilder.Entity("FineArt.Domain.Artwork", b =>
@@ -124,25 +156,74 @@ namespace FineArt.Infrastructure.Migrations
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("ArtistDisplayName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("varchar(255)")
+                        .HasColumnName("Artist");
+
                     b.Property<int>("ArtistId")
                         .HasColumnType("int");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime(6)");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime(6)")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP(6)");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("longtext");
 
                     b.Property<string>("ImageUrl")
                         .IsRequired()
-                        .HasColumnType("longtext");
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)");
+
+                    b.Property<bool>("IsRentable")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit(1)")
+                        .HasDefaultValue(false);
+
+                    b.Property<string>("MainTheme")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<string>("Material")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
 
                     b.Property<int>("Price")
                         .HasColumnType("int");
 
+                    b.Property<int?>("RentPrice")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Size")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
                     b.Property<int>("Status")
                         .HasColumnType("int");
 
+                    b.Property<string>("SubTheme")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
                     b.Property<string>("Title")
                         .IsRequired()
-                        .HasColumnType("longtext");
+                        .HasMaxLength(255)
+                        .HasColumnType("varchar(255)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("datetime(6)")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP(6)");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlComputedColumn(b.Property<DateTime>("UpdatedAt"));
 
                     b.HasKey("Id");
 
@@ -151,10 +232,73 @@ namespace FineArt.Infrastructure.Migrations
                     b.HasIndex("CreatedAt")
                         .HasDatabaseName("idx_artwork_created_at");
 
+                    b.HasIndex("MainTheme")
+                        .HasDatabaseName("idx_artwork_theme");
+
                     b.HasIndex("Price")
                         .HasDatabaseName("idx_artwork_price");
 
+                    b.HasIndex("Status")
+                        .HasDatabaseName("idx_artwork_status");
+
                     b.ToTable("Artworks");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            ArtistDisplayName = "미나 허",
+                            ArtistId = 1001,
+                            CreatedAt = new DateTime(2024, 11, 5, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "서울의 야경을 아크릴 레이어로 재해석한 시티 캔버스.",
+                            ImageUrl = "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=1200&q=80",
+                            IsRentable = true,
+                            MainTheme = "풍경",
+                            Material = "아크릴",
+                            Price = 2900000,
+                            RentPrice = 480000,
+                            Size = "91x117cm · 80호 이상",
+                            Status = 2,
+                            SubTheme = "도시 조명",
+                            Title = "Seoul Lightscape",
+                            UpdatedAt = new DateTime(2024, 11, 5, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = 2,
+                            ArtistDisplayName = "라텍스 듀오",
+                            ArtistId = 1002,
+                            CreatedAt = new DateTime(2024, 11, 5, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "광물성 안료가 겹겹이 쌓여 만들어낸 열감 있는 추상 회화.",
+                            ImageUrl = "https://images.unsplash.com/photo-1472214103451-9374bd1c798e?auto=format&fit=crop&w=1200&q=80",
+                            IsRentable = false,
+                            MainTheme = "추상",
+                            Material = "유화",
+                            Price = 1800000,
+                            Size = "73x91cm · 30호~50호",
+                            Status = 0,
+                            SubTheme = "감각",
+                            Title = "Warm Mineral",
+                            UpdatedAt = new DateTime(2024, 11, 5, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = 3,
+                            ArtistDisplayName = "이수현",
+                            ArtistId = 1003,
+                            CreatedAt = new DateTime(2024, 11, 5, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "잉크와 혼합재료로 공간감과 몰입을 강조한 시리즈.",
+                            ImageUrl = "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=80",
+                            IsRentable = false,
+                            MainTheme = "상상",
+                            Material = "혼합재료",
+                            Price = 4200000,
+                            Size = "100x100cm · 50호~80호",
+                            Status = 0,
+                            SubTheme = "미래 공간",
+                            Title = "Void Ink - Capsule",
+                            UpdatedAt = new DateTime(2024, 11, 5, 0, 0, 0, 0, DateTimeKind.Utc)
+                        });
                 });
 
             modelBuilder.Entity("FineArt.Domain.Exhibition", b =>

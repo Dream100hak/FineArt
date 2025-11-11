@@ -16,7 +16,15 @@ public class ArtworkCommandService
 
     public async Task<Artwork> CreateAsync(
         string title,
+        string artistDisplayName,
+        string description,
+        string mainTheme,
+        string? subTheme,
+        string size,
+        string material,
         int price,
+        bool isRentable,
+        int? rentPrice,
         string? imageUrl,
         ArtworkStatus status,
         int artistId,
@@ -25,10 +33,19 @@ public class ArtworkCommandService
         var artwork = new Artwork
         {
             Title = title.Trim(),
+            ArtistDisplayName = artistDisplayName.Trim(),
+            Description = description.Trim(),
+            MainTheme = mainTheme.Trim(),
+            SubTheme = subTheme?.Trim() ?? string.Empty,
+            Size = size.Trim(),
+            Material = material.Trim(),
             Price = price,
+            IsRentable = isRentable,
+            RentPrice = isRentable ? rentPrice : null,
             ImageUrl = imageUrl?.Trim() ?? string.Empty,
             Status = status,
             CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow,
             ArtistId = artistId
         };
 
@@ -41,7 +58,15 @@ public class ArtworkCommandService
     public async Task<Artwork?> UpdateAsync(
         int id,
         string title,
+        string artistDisplayName,
+        string description,
+        string mainTheme,
+        string? subTheme,
+        string size,
+        string material,
         int price,
+        bool isRentable,
+        int? rentPrice,
         string? imageUrl,
         ArtworkStatus status,
         int artistId,
@@ -54,10 +79,19 @@ public class ArtworkCommandService
         }
 
         artwork.Title = title.Trim();
+        artwork.ArtistDisplayName = artistDisplayName.Trim();
+        artwork.Description = description.Trim();
+        artwork.MainTheme = mainTheme.Trim();
+        artwork.SubTheme = subTheme?.Trim() ?? string.Empty;
+        artwork.Size = size.Trim();
+        artwork.Material = material.Trim();
         artwork.Price = price;
+        artwork.IsRentable = isRentable;
+        artwork.RentPrice = isRentable ? rentPrice : null;
         artwork.ImageUrl = imageUrl?.Trim() ?? string.Empty;
         artwork.Status = status;
         artwork.ArtistId = artistId;
+        artwork.UpdatedAt = DateTime.UtcNow;
 
         await _db.SaveChangesAsync(cancellationToken);
 

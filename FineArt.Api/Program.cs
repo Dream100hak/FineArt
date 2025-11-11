@@ -147,7 +147,11 @@ app.UseCors("react");
 app.UseStaticFiles();
 
 app.UseSwagger();
-app.UseSwaggerUI();
+app.UseSwaggerUI(options =>
+{
+    options.SwaggerEndpoint("/swagger/v1/swagger.json", "FineArt API v1");
+    options.RoutePrefix = string.Empty; // serve Swagger UI at root
+});
 
 app.UseAuthentication();
 app.UseAuthorization();

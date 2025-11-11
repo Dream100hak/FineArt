@@ -31,12 +31,16 @@ public class ArtworksController : ControllerBase
     [AllowAnonymous]
     public async Task<IActionResult> GetAll(
         [FromQuery] string? keyword,
+        [FromQuery] string? theme,
         [FromQuery] int? priceMin,
         [FromQuery] int? priceMax,
+        [FromQuery(Name = "size")] string? sizeFilter,
+        [FromQuery] string? material,
+        [FromQuery] bool? rentable,
         [FromQuery] string? status,
         [FromQuery] string? sort,
         [FromQuery] int page = 1,
-        [FromQuery] int size = 10,
+        [FromQuery(Name = "pageSize")] int pageSize = 12,
         CancellationToken cancellationToken = default)
     {
         if (page < 1)
@@ -44,9 +48,9 @@ public class ArtworksController : ControllerBase
             page = 1;
         }
 
-        if (size < 1)
+        if (pageSize < 1)
         {
-            size = 10;
+            pageSize = 12;
         }
 
         var source = _db.Artworks
@@ -56,31 +60,43 @@ public class ArtworksController : ControllerBase
         var (items, total) = await _artworkQueryService.QueryAsync(
             source,
             keyword,
+            theme,
+            sizeFilter,
+            material,
+            rentable,
             priceMin,
             priceMax,
             status,
             sort,
             page,
-            size,
+            pageSize,
             cancellationToken);
 
         var responseItems = items.Select(a => new
         {
             a.Id,
             a.Title,
+            a.ArtistDisplayName,
             a.Price,
             a.ImageUrl,
             Status = a.Status.ToString(),
             a.ArtistId,
             ArtistName = a.Artist?.Name ?? string.Empty,
-            a.CreatedAt
+            a.MainTheme,
+            a.SubTheme,
+            a.Size,
+            a.Material,
+            a.IsRentable,
+            a.RentPrice,
+            a.CreatedAt,
+            a.UpdatedAt
         });
 
         return Ok(new
         {
             total,
             page,
-            size,
+            pageSize,
             items = responseItems
         });
     }
@@ -101,7 +117,16 @@ public class ArtworksController : ControllerBase
                 Status = a.Status.ToString(),
                 a.ArtistId,
                 ArtistName = a.Artist != null ? a.Artist.Name : string.Empty,
-                a.CreatedAt
+                a.ArtistDisplayName,
+                a.Description,
+                a.MainTheme,
+                a.SubTheme,
+                a.Size,
+                a.Material,
+                a.IsRentable,
+                a.RentPrice,
+                a.CreatedAt,
+                a.UpdatedAt
             })
             .FirstOrDefaultAsync(cancellationToken);
 
@@ -111,12 +136,23 @@ public class ArtworksController : ControllerBase
     }
 
     [HttpPost]
-    [Authorize(Policy = "AdminOnly")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Create([FromBody] ArtworkCreateDto dto, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(dto.Title) || dto.Price < 0 || dto.ArtistId <= 0)
+        if (string.IsNullOrWhiteSpace(dto.Title) ||
+            string.IsNullOrWhiteSpace(dto.Description) ||
+            string.IsNullOrWhiteSpace(dto.MainTheme) ||
+            string.IsNullOrWhiteSpace(dto.Size) ||
+            string.IsNullOrWhiteSpace(dto.Material) ||
+            dto.Price < 0 ||
+            dto.ArtistId <= 0)
         {
-            return BadRequest(new { message = "Title, price, and artist must be valid." });
+            return BadRequest(new { message = "Title, description, price, material, size, and artist must be valid." });
+        }
+
+        if (dto.IsRentable && (!dto.RentPrice.HasValue || dto.RentPrice <= 0))
+        {
+            return BadRequest(new { message = "Rent price must be provided for rentable artworks." });
         }
 
         if (!Enum.TryParse<ArtworkStatus>(dto.Status, true, out var status))
@@ -134,7 +170,15 @@ public class ArtworksController : ControllerBase
 
         var artwork = await _artworkCommandService.CreateAsync(
             dto.Title,
+            artist.Name,
+            dto.Description,
+            dto.MainTheme,
+            dto.SubTheme,
+            dto.Size,
+            dto.Material,
             dto.Price,
+            dto.IsRentable,
+            dto.RentPrice,
             dto.ImageUrl,
             status,
             dto.ArtistId,
@@ -144,22 +188,41 @@ public class ArtworksController : ControllerBase
         {
             artwork.Id,
             artwork.Title,
+            artwork.ArtistDisplayName,
             artwork.Price,
             artwork.ImageUrl,
             Status = artwork.Status.ToString(),
             artwork.ArtistId,
             ArtistName = artist.Name,
-            artwork.CreatedAt
+            artwork.MainTheme,
+            artwork.SubTheme,
+            artwork.Size,
+            artwork.Material,
+            artwork.IsRentable,
+            artwork.RentPrice,
+            artwork.CreatedAt,
+            artwork.UpdatedAt
         });
     }
 
     [HttpPut("{id:int}")]
-    [Authorize(Policy = "AdminOnly")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Update(int id, [FromBody] ArtworkUpdateDto dto, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(dto.Title) || dto.Price < 0 || dto.ArtistId <= 0)
+        if (string.IsNullOrWhiteSpace(dto.Title) ||
+            string.IsNullOrWhiteSpace(dto.Description) ||
+            string.IsNullOrWhiteSpace(dto.MainTheme) ||
+            string.IsNullOrWhiteSpace(dto.Size) ||
+            string.IsNullOrWhiteSpace(dto.Material) ||
+            dto.Price < 0 ||
+            dto.ArtistId <= 0)
         {
-            return BadRequest(new { message = "Title, price, and artist must be valid." });
+            return BadRequest(new { message = "Title, description, price, material, size, and artist must be valid." });
+        }
+
+        if (dto.IsRentable && (!dto.RentPrice.HasValue || dto.RentPrice <= 0))
+        {
+            return BadRequest(new { message = "Rent price must be provided for rentable artworks." });
         }
 
         if (!Enum.TryParse<ArtworkStatus>(dto.Status, true, out var status))
@@ -178,7 +241,15 @@ public class ArtworksController : ControllerBase
         var artwork = await _artworkCommandService.UpdateAsync(
             id,
             dto.Title,
+            artist.Name,
+            dto.Description,
+            dto.MainTheme,
+            dto.SubTheme,
+            dto.Size,
+            dto.Material,
             dto.Price,
+            dto.IsRentable,
+            dto.RentPrice,
             dto.ImageUrl,
             status,
             dto.ArtistId,
@@ -193,17 +264,25 @@ public class ArtworksController : ControllerBase
         {
             artwork.Id,
             artwork.Title,
+            artwork.ArtistDisplayName,
             artwork.Price,
             artwork.ImageUrl,
             Status = artwork.Status.ToString(),
             artwork.ArtistId,
             ArtistName = artist.Name,
-            artwork.CreatedAt
+            artwork.MainTheme,
+            artwork.SubTheme,
+            artwork.Size,
+            artwork.Material,
+            artwork.IsRentable,
+            artwork.RentPrice,
+            artwork.CreatedAt,
+            artwork.UpdatedAt
         });
     }
 
     [HttpDelete("{id:int}")]
-    [Authorize(Policy = "AdminOnly")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
     {
         var deleted = await _artworkCommandService.DeleteAsync(id, cancellationToken);
