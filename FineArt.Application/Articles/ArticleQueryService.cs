@@ -7,6 +7,8 @@ public class ArticleQueryService
 {
     public async Task<(IReadOnlyList<Article> Items, int TotalCount)> QueryAsync(
         IQueryable<Article> source,
+        int? boardTypeId,
+        string? boardSlug,
         string? category,
         string? keyword,
         string? sort,
@@ -24,7 +26,7 @@ public class ArticleQueryService
             size = 10;
         }
 
-        var filtered = ApplyFilters(source, category, keyword);
+        var filtered = ApplyFilters(source, boardTypeId, boardSlug, category, keyword);
         var totalCount = await filtered.CountAsync(cancellationToken);
 
         var ordered = ApplySort(filtered, sort);
@@ -43,8 +45,24 @@ public class ArticleQueryService
         CancellationToken cancellationToken = default) =>
         source.FirstOrDefaultAsync(a => a.Id == id, cancellationToken);
 
-    private static IQueryable<Article> ApplyFilters(IQueryable<Article> query, string? category, string? keyword)
+    private static IQueryable<Article> ApplyFilters(
+        IQueryable<Article> query,
+        int? boardTypeId,
+        string? boardSlug,
+        string? category,
+        string? keyword)
     {
+        if (boardTypeId.HasValue)
+        {
+            query = query.Where(a => a.BoardTypeId == boardTypeId.Value);
+        }
+
+        if (!string.IsNullOrWhiteSpace(boardSlug))
+        {
+            var normalizedSlug = boardSlug.Trim().ToLower();
+            query = query.Where(a => a.BoardType.Slug.ToLower() == normalizedSlug);
+        }
+
         if (!string.IsNullOrWhiteSpace(category))
         {
             var normalizedCategory = category.Trim().ToLower();
@@ -57,7 +75,8 @@ public class ArticleQueryService
             query = query.Where(a =>
                 a.Title.Contains(term) ||
                 a.Content.Contains(term) ||
-                a.Writer.Contains(term));
+                a.Writer.Contains(term) ||
+                a.Email.Contains(term));
         }
 
         return query;

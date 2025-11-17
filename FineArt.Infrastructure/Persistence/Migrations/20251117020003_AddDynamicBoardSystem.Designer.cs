@@ -4,6 +4,7 @@ using FineArt.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace FineArt.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(AppDb))]
-    partial class AppDbModelSnapshot : ModelSnapshot
+    [Migration("20251117020003_AddDynamicBoardSystem")]
+    partial class AddDynamicBoardSystem
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -659,22 +662,10 @@ namespace FineArt.Infrastructure.Persistence.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("varchar(255)");
 
-                    b.Property<bool>("IsVisible")
-                        .HasColumnType("bit(1)");
-
-                    b.Property<int>("LayoutType")
-                        .HasColumnType("int");
-
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("varchar(100)");
-
-                    b.Property<int>("OrderIndex")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("ParentId")
-                        .HasColumnType("int");
 
                     b.Property<string>("Slug")
                         .IsRequired()
@@ -697,10 +688,7 @@ namespace FineArt.Infrastructure.Persistence.Migrations
                             Id = 1,
                             CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Description = "사이트 및 전시 관련 공지",
-                            IsVisible = true,
-                            LayoutType = 0,
                             Name = "공지사항",
-                            OrderIndex = 0,
                             Slug = "notice",
                             UpdatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
                         },
@@ -709,10 +697,7 @@ namespace FineArt.Infrastructure.Persistence.Migrations
                             Id = 2,
                             CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Description = "사용자 자유 토론",
-                            IsVisible = true,
-                            LayoutType = 0,
                             Name = "자유게시판",
-                            OrderIndex = 0,
                             Slug = "free",
                             UpdatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
                         },
@@ -721,10 +706,7 @@ namespace FineArt.Infrastructure.Persistence.Migrations
                             Id = 3,
                             CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Description = "예술 관련 뉴스",
-                            IsVisible = true,
-                            LayoutType = 0,
                             Name = "뉴스",
-                            OrderIndex = 0,
                             Slug = "news",
                             UpdatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
                         },
@@ -733,10 +715,7 @@ namespace FineArt.Infrastructure.Persistence.Migrations
                             Id = 4,
                             CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Description = "미술 관련 채용 공고",
-                            IsVisible = true,
-                            LayoutType = 0,
                             Name = "채용",
-                            OrderIndex = 0,
                             Slug = "recruit",
                             UpdatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
                         },
@@ -745,10 +724,7 @@ namespace FineArt.Infrastructure.Persistence.Migrations
                             Id = 5,
                             CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Description = "FineArt 주관 행사 소식",
-                            IsVisible = true,
-                            LayoutType = 0,
                             Name = "전시/행사",
-                            OrderIndex = 0,
                             Slug = "exhibition",
                             UpdatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
                         });

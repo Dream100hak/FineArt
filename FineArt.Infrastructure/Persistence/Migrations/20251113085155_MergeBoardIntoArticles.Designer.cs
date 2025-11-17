@@ -4,6 +4,7 @@ using FineArt.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace FineArt.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(AppDb))]
-    partial class AppDbModelSnapshot : ModelSnapshot
+    [Migration("20251113085155_MergeBoardIntoArticles")]
+    partial class MergeBoardIntoArticles
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -30,12 +33,10 @@ namespace FineArt.Infrastructure.Persistence.Migrations
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<int>("BoardTypeId")
-                        .HasColumnType("int");
-
                     b.Property<string>("Category")
-                        .HasMaxLength(100)
-                        .HasColumnType("varchar(100)");
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("varchar(64)");
 
                     b.Property<string>("Content")
                         .IsRequired()
@@ -44,23 +45,23 @@ namespace FineArt.Infrastructure.Persistence.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime(6)");
 
-                    b.Property<string>("Email")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("varchar(255)");
-
                     b.Property<string>("ImageUrl")
-                        .HasMaxLength(500)
-                        .HasColumnType("varchar(500)");
+                        .IsRequired()
+                        .HasMaxLength(2048)
+                        .HasColumnType("varchar(2048)");
+
+                    b.Property<bool>("IsBoard")
+                        .HasColumnType("bit(1)");
 
                     b.Property<string>("ThumbnailUrl")
-                        .HasMaxLength(500)
-                        .HasColumnType("varchar(500)");
+                        .IsRequired()
+                        .HasMaxLength(2048)
+                        .HasColumnType("varchar(2048)");
 
                     b.Property<string>("Title")
                         .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("varchar(255)");
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)");
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime(6)");
@@ -72,55 +73,18 @@ namespace FineArt.Infrastructure.Persistence.Migrations
 
                     b.Property<string>("Writer")
                         .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("varchar(100)");
+                        .HasMaxLength(128)
+                        .HasColumnType("varchar(128)");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("BoardTypeId");
+                    b.HasIndex("Category")
+                        .HasDatabaseName("idx_articles_category");
 
                     b.HasIndex("CreatedAt")
                         .HasDatabaseName("idx_articles_created_at");
 
                     b.ToTable("Articles");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 90001,
-                            BoardTypeId = 1,
-                            Content = "FineArt 시스템 점검이 예정되어 있습니다. 점검 시간 동안 일부 서비스 이용이 제한될 수 있습니다.",
-                            CreatedAt = new DateTime(2025, 1, 10, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Email = "admin@fineart.local",
-                            Title = "서버 점검 안내",
-                            UpdatedAt = new DateTime(2025, 1, 10, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Views = 0,
-                            Writer = "관리자"
-                        },
-                        new
-                        {
-                            Id = 90002,
-                            BoardTypeId = 3,
-                            Content = "2025 서울 아트페어에 참가할 작가를 모집합니다.",
-                            CreatedAt = new DateTime(2025, 1, 12, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Email = "news@fineart.local",
-                            Title = "서울 아트페어 참가 공모",
-                            UpdatedAt = new DateTime(2025, 1, 12, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Views = 0,
-                            Writer = "서울문화재단"
-                        },
-                        new
-                        {
-                            Id = 90003,
-                            BoardTypeId = 5,
-                            Content = "우하남 작가의 전시가 FineArt Cube에서 개최됩니다.",
-                            CreatedAt = new DateTime(2025, 1, 15, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Email = "event@fineart.local",
-                            Title = "우하남展 개최",
-                            UpdatedAt = new DateTime(2025, 1, 15, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Views = 0,
-                            Writer = "FineArt"
-                        });
                 });
 
             modelBuilder.Entity("FineArt.Domain.Artist", b =>
@@ -644,116 +608,6 @@ namespace FineArt.Infrastructure.Persistence.Migrations
                         });
                 });
 
-            modelBuilder.Entity("FineArt.Domain.BoardType", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime(6)");
-
-                    b.Property<string>("Description")
-                        .HasMaxLength(255)
-                        .HasColumnType("varchar(255)");
-
-                    b.Property<bool>("IsVisible")
-                        .HasColumnType("bit(1)");
-
-                    b.Property<int>("LayoutType")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("varchar(100)");
-
-                    b.Property<int>("OrderIndex")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("ParentId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Slug")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("varchar(100)");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("datetime(6)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("Slug")
-                        .IsUnique();
-
-                    b.ToTable("BoardTypes");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "사이트 및 전시 관련 공지",
-                            IsVisible = true,
-                            LayoutType = 0,
-                            Name = "공지사항",
-                            OrderIndex = 0,
-                            Slug = "notice",
-                            UpdatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
-                        },
-                        new
-                        {
-                            Id = 2,
-                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "사용자 자유 토론",
-                            IsVisible = true,
-                            LayoutType = 0,
-                            Name = "자유게시판",
-                            OrderIndex = 0,
-                            Slug = "free",
-                            UpdatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
-                        },
-                        new
-                        {
-                            Id = 3,
-                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "예술 관련 뉴스",
-                            IsVisible = true,
-                            LayoutType = 0,
-                            Name = "뉴스",
-                            OrderIndex = 0,
-                            Slug = "news",
-                            UpdatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
-                        },
-                        new
-                        {
-                            Id = 4,
-                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "미술 관련 채용 공고",
-                            IsVisible = true,
-                            LayoutType = 0,
-                            Name = "채용",
-                            OrderIndex = 0,
-                            Slug = "recruit",
-                            UpdatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
-                        },
-                        new
-                        {
-                            Id = 5,
-                            CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Description = "FineArt 주관 행사 소식",
-                            IsVisible = true,
-                            LayoutType = 0,
-                            Name = "전시/행사",
-                            OrderIndex = 0,
-                            Slug = "exhibition",
-                            UpdatedAt = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
-                        });
-                });
-
             modelBuilder.Entity("FineArt.Domain.Exhibition", b =>
                 {
                     b.Property<int>("Id")
@@ -1029,17 +883,6 @@ namespace FineArt.Infrastructure.Persistence.Migrations
                     b.ToTable("Users");
                 });
 
-            modelBuilder.Entity("FineArt.Domain.Article", b =>
-                {
-                    b.HasOne("FineArt.Domain.BoardType", "BoardType")
-                        .WithMany("Articles")
-                        .HasForeignKey("BoardTypeId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("BoardType");
-                });
-
             modelBuilder.Entity("FineArt.Domain.Artwork", b =>
                 {
                     b.HasOne("FineArt.Domain.Artist", "Artist")
@@ -1054,11 +897,6 @@ namespace FineArt.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("FineArt.Domain.Artist", b =>
                 {
                     b.Navigation("Artworks");
-                });
-
-            modelBuilder.Entity("FineArt.Domain.BoardType", b =>
-                {
-                    b.Navigation("Articles");
                 });
 #pragma warning restore 612, 618
         }

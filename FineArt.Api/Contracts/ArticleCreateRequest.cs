@@ -1,9 +1,11 @@
 namespace FineArt.Api.Contracts;
 
 public record ArticleCreateRequest(
+    int BoardTypeId,
     string Title,
     string Content,
-    string? ImageUrl,
-    string? ThumbnailUrl,
     string Writer,
-    string Category);
+    string Email,
+    string? Category,
+    string? ImageUrl,
+    string? ThumbnailUrl);

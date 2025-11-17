@@ -1,7 +1,9 @@
+using System;
 using System.IO;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.Extensions.Configuration;
+using Pomelo.EntityFrameworkCore.MySql.Infrastructure;
 
 namespace FineArt.Infrastructure.Persistence;
 
@@ -26,8 +28,20 @@ public class AppDbFactory : IDesignTimeDbContextFactory<AppDb>
         }
 
         var optionsBuilder = new DbContextOptionsBuilder<AppDb>();
-        optionsBuilder.UseMySql(cs, ServerVersion.AutoDetect(cs));
+        optionsBuilder.UseMySql(cs, ResolveServerVersion(cs));
 
         return new AppDb(optionsBuilder.Options);
+    }
+
+    private static ServerVersion ResolveServerVersion(string connectionString)
+    {
+        try
+        {
+            return ServerVersion.AutoDetect(connectionString);
+        }
+        catch
+        {
+            return ServerVersion.Create(new Version(8, 0, 36), ServerType.MySql);
+        }
     }
 }

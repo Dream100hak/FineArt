@@ -15,23 +15,27 @@ public class ArticleCommandService
     }
 
     public async Task<Article> CreateAsync(
+        int boardTypeId,
         string title,
         string content,
+        string writer,
+        string email,
+        string? category,
         string? imageUrl,
         string? thumbnailUrl,
-        string writer,
-        string category,
         CancellationToken cancellationToken = default)
     {
         var now = DateTime.UtcNow;
         var article = new Article
         {
+            BoardTypeId = boardTypeId,
             Title = title.Trim(),
             Content = content.Trim(),
-            ImageUrl = imageUrl?.Trim() ?? string.Empty,
-            ThumbnailUrl = thumbnailUrl?.Trim() ?? string.Empty,
             Writer = writer.Trim(),
+            Email = email.Trim(),
             Category = NormalizeCategory(category),
+            ImageUrl = imageUrl?.Trim(),
+            ThumbnailUrl = thumbnailUrl?.Trim(),
             Views = 0,
             CreatedAt = now,
             UpdatedAt = now
@@ -39,18 +43,21 @@ public class ArticleCommandService
 
         await _articles.AddAsync(article, cancellationToken);
         await _db.SaveChangesAsync(cancellationToken);
+        await EnsureBoardLoadedAsync(article, cancellationToken);
 
         return article;
     }
 
     public async Task<Article?> UpdateAsync(
         int id,
+        int boardTypeId,
         string title,
         string content,
+        string writer,
+        string email,
+        string? category,
         string? imageUrl,
         string? thumbnailUrl,
-        string writer,
-        string category,
         CancellationToken cancellationToken = default)
     {
         var article = await _articles.FirstOrDefaultAsync(a => a.Id == id, cancellationToken);
@@ -59,15 +66,18 @@ public class ArticleCommandService
             return null;
         }
 
+        article.BoardTypeId = boardTypeId;
         article.Title = title.Trim();
         article.Content = content.Trim();
-        article.ImageUrl = imageUrl?.Trim() ?? string.Empty;
-        article.ThumbnailUrl = thumbnailUrl?.Trim() ?? string.Empty;
         article.Writer = writer.Trim();
+        article.Email = email.Trim();
         article.Category = NormalizeCategory(category);
+        article.ImageUrl = imageUrl?.Trim();
+        article.ThumbnailUrl = thumbnailUrl?.Trim();
         article.UpdatedAt = DateTime.UtcNow;
 
         await _db.SaveChangesAsync(cancellationToken);
+        await EnsureBoardLoadedAsync(article, cancellationToken);
 
         return article;
     }
@@ -88,7 +98,9 @@ public class ArticleCommandService
 
     public async Task<Article?> IncrementViewCountAsync(int id, CancellationToken cancellationToken = default)
     {
-        var article = await _articles.FirstOrDefaultAsync(a => a.Id == id, cancellationToken);
+        var article = await _articles
+            .Include(a => a.BoardType)
+            .FirstOrDefaultAsync(a => a.Id == id, cancellationToken);
         if (article is null)
         {
             return null;
@@ -100,8 +112,24 @@ public class ArticleCommandService
         return article;
     }
 
-    private static string NormalizeCategory(string category) =>
+    private static string? NormalizeCategory(string? category) =>
         string.IsNullOrWhiteSpace(category)
-            ? string.Empty
+            ? null
             : category.Trim().ToLowerInvariant();
+
+    private async Task EnsureBoardLoadedAsync(Article article, CancellationToken cancellationToken)
+    {
+        if (article is null)
+        {
+            return;
+        }
+
+        var entry = _db.Entry(article);
+        if (entry.Reference(a => a.BoardType).IsLoaded)
+        {
+            return;
+        }
+
+        await entry.Reference(a => a.BoardType).LoadAsync(cancellationToken);
+    }
 }

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using FineArt.Api.Contracts;
 using FineArt.Application.Articles;
+using FineArt.Domain;
 using FineArt.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -37,9 +38,13 @@ public class ArticlesController : ControllerBase
         var page = query.Page < 1 ? 1 : query.Page;
         var size = query.Size < 1 ? 10 : query.Size;
 
-        var source = _db.Articles.AsNoTracking();
+        var source = _db.Articles
+            .AsNoTracking()
+            .Include(a => a.BoardType);
         var (items, total) = await _articleQueryService.QueryAsync(
             source,
+            query.BoardTypeId,
+            query.BoardSlug,
             query.Category,
             query.Keyword,
             query.Sort,
@@ -47,27 +52,13 @@ public class ArticlesController : ControllerBase
             size,
             cancellationToken);
 
-        var responseItems = items.Select(a => new
-        {
-            id = a.Id,
-            a.Title,
-            a.Content,
-            Author = a.Writer,
-            Writer = a.Writer,
-            a.Category,
-            a.Views,
-            a.ImageUrl,
-            a.ThumbnailUrl,
-            Images = BuildImageSet(a.ImageUrl, a.ThumbnailUrl),
-            a.CreatedAt,
-            a.UpdatedAt
-        });
+        var responseItems = items.Select(MapArticleResponse);
 
         return Ok(new
         {
             total,
             page,
-            size, responseItems,
+            size,
             items = responseItems
         });
     }
@@ -82,60 +73,46 @@ public class ArticlesController : ControllerBase
             return NotFound(new { message = "Article not found." });
         }
 
-        return Ok(new
-        {
-            id = article.Id,
-            article.Title,
-            article.Content,
-            Author = article.Writer,
-            Writer = article.Writer,
-            article.Category,
-            article.Views,
-            article.ImageUrl,
-            article.ThumbnailUrl,
-            Images = BuildImageSet(article.ImageUrl, article.ThumbnailUrl),
-            article.CreatedAt,
-            article.UpdatedAt
-        });
+        return Ok(MapArticleResponse(article));
     }
 
     [HttpPost]
-    [Authorize(Roles = "Admin")]
+    [Authorize]
     public async Task<IActionResult> Create(
         [FromBody] ArticleCreateRequest request,
         CancellationToken cancellationToken = default)
     {
-        var validationError = ValidateArticlePayload(request.Title, request.Content, request.Writer, request.Category);
+        var validationError = ValidateArticlePayload(
+            request.BoardTypeId,
+            request.Title,
+            request.Content,
+            request.Writer,
+            request.Email,
+            request.Category);
         if (validationError is not null)
         {
             return BadRequest(new { message = validationError });
         }
 
-        // ImageUrl remains a simple string so the planned /upload endpoint can plug in without changing this contract.
+        var boardExists = await _db.BoardTypes.AsNoTracking()
+            .AnyAsync(b => b.Id == request.BoardTypeId, cancellationToken);
+        if (!boardExists)
+        {
+            return BadRequest(new { message = "BoardTypeId does not exist." });
+        }
+
         var article = await _articleCommandService.CreateAsync(
+            request.BoardTypeId,
             request.Title,
             request.Content,
+            request.Writer,
+            request.Email,
+            request.Category,
             request.ImageUrl,
             request.ThumbnailUrl,
-            request.Writer,
-            request.Category,
             cancellationToken);
 
-        return CreatedAtAction(nameof(GetById), new { id = article.Id }, new
-        {
-            id = article.Id,
-            article.Title,
-            article.Content,
-            Author = article.Writer,
-            Writer = article.Writer,
-            article.Category,
-            article.Views,
-            article.ImageUrl,
-            article.ThumbnailUrl,
-            Images = BuildImageSet(article.ImageUrl, article.ThumbnailUrl),
-            article.CreatedAt,
-            article.UpdatedAt
-        });
+        return CreatedAtAction(nameof(GetById), new { id = article.Id }, MapArticleResponse(article));
     }
 
     [HttpPut("{id:int}")]
@@ -145,21 +122,35 @@ public class ArticlesController : ControllerBase
         [FromBody] ArticleUpdateRequest request,
         CancellationToken cancellationToken = default)
     {
-        var validationError = ValidateArticlePayload(request.Title, request.Content, request.Writer, request.Category);
+        var validationError = ValidateArticlePayload(
+            request.BoardTypeId,
+            request.Title,
+            request.Content,
+            request.Writer,
+            request.Email,
+            request.Category);
         if (validationError is not null)
         {
             return BadRequest(new { message = validationError });
         }
 
-        // When images start flowing through /upload we can simply pass the returned URL here.
+        var boardExists = await _db.BoardTypes.AsNoTracking()
+            .AnyAsync(b => b.Id == request.BoardTypeId, cancellationToken);
+        if (!boardExists)
+        {
+            return BadRequest(new { message = "BoardTypeId does not exist." });
+        }
+
         var article = await _articleCommandService.UpdateAsync(
             id,
+            request.BoardTypeId,
             request.Title,
             request.Content,
+            request.Writer,
+            request.Email,
+            request.Category,
             request.ImageUrl,
             request.ThumbnailUrl,
-            request.Writer,
-            request.Category,
             cancellationToken);
 
         if (article is null)
@@ -167,21 +158,7 @@ public class ArticlesController : ControllerBase
             return NotFound(new { message = "Article not found." });
         }
 
-        return Ok(new
-        {
-            id = article.Id,
-            article.Title,
-            article.Content,
-            Author = article.Writer,
-            Writer = article.Writer,
-            article.Category,
-            article.Views,
-            article.ImageUrl,
-            article.ThumbnailUrl,
-            Images = BuildImageSet(article.ImageUrl, article.ThumbnailUrl),
-            article.CreatedAt,
-            article.UpdatedAt
-        });
+        return Ok(MapArticleResponse(article));
     }
 
     [HttpDelete("{id:int}")]
@@ -196,6 +173,24 @@ public class ArticlesController : ControllerBase
 
         return NoContent();
     }
+
+    private static object MapArticleResponse(Article article) => new
+    {
+        id = article.Id,
+        Board = new { id = article.BoardTypeId, article.BoardType?.Name, article.BoardType?.Slug },
+        article.Title,
+        article.Content,
+        Author = article.Writer,
+        Writer = article.Writer,
+        article.Email,
+        article.Category,
+        article.Views,
+        article.ImageUrl,
+        article.ThumbnailUrl,
+        Images = BuildImageSet(article.ImageUrl, article.ThumbnailUrl),
+        article.CreatedAt,
+        article.UpdatedAt
+    };
 
     private static IReadOnlyList<string> BuildImageSet(string? imageUrl, string? thumbnailUrl)
     {
@@ -214,8 +209,19 @@ public class ArticlesController : ControllerBase
         return images;
     }
 
-    private static string? ValidateArticlePayload(string title, string content, string writer, string category)
+    private static string? ValidateArticlePayload(
+        int boardTypeId,
+        string title,
+        string content,
+        string writer,
+        string email,
+        string? category)
     {
+        if (boardTypeId <= 0)
+        {
+            return "BoardTypeId is required.";
+        }
+
         if (string.IsNullOrWhiteSpace(title))
         {
             return "Title is required.";
@@ -231,9 +237,9 @@ public class ArticlesController : ControllerBase
             return "Writer is required.";
         }
 
-        if (string.IsNullOrWhiteSpace(category))
+        if (string.IsNullOrWhiteSpace(email))
         {
-            return "Category is required.";
+            return "Email is required.";
         }
 
         return null;

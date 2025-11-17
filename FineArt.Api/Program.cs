@@ -2,6 +2,7 @@
 using System.Text.Json;
 using FineArt.Api.Contracts;
 using FineArt.Application.Articles;
+using FineArt.Application.BoardTypes;
 using FineArt.Application.Artworks;
 using FineArt.Application.Auth;
 using FineArt.Application.Exhibitions;
@@ -82,6 +83,8 @@ builder.Services.AddScoped<ArtworkQueryService>();
 builder.Services.AddScoped<ArtworkCommandService>();
 builder.Services.AddScoped<ArticleQueryService>();
 builder.Services.AddScoped<ArticleCommandService>();
+builder.Services.AddScoped<BoardTypeQueryService>();
+builder.Services.AddScoped<BoardTypeCommandService>();
 builder.Services.AddScoped<ExhibitionQueryService>();
 builder.Services.AddScoped<ExhibitionCommandService>();
 

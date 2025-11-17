@@ -160,6 +160,67 @@ export const getExhibitionById = (id) => {
   );
 };
 
+export const getBoards = (params = {}) =>
+  request(
+    () =>
+      api.get('/api/boards', {
+        params: sanitizeParams(params),
+      }),
+    'GET /api/boards',
+  );
+
+export const getBoardsSidebar = (params = {}) =>
+  request(
+    () =>
+      api.get('/api/boards/sidebar', {
+        params: sanitizeParams(params),
+      }),
+    'GET /api/boards/sidebar',
+  );
+
+export const getBoardBySlug = (slugOrId) => {
+  const normalized =
+    typeof slugOrId === 'number'
+      ? slugOrId.toString()
+      : typeof slugOrId === 'string'
+        ? slugOrId.trim()
+        : '';
+
+  if (!normalized) {
+    throw new Error('Board identifier is required');
+  }
+
+  return request(() => api.get(`/api/boards/${normalized}`), 'GET /api/boards/:slug');
+};
+
+export const getBoardArticles = (slug, params = {}) => {
+  if (!slug) {
+    throw new Error('Board slug is required');
+  }
+
+  return request(
+    () =>
+      api.get(`/api/boards/${slug}/articles`, {
+        params: sanitizeParams(params),
+      }),
+    'GET /api/boards/:slug/articles',
+  );
+};
+
+export const getBoardArticleById = (slug, id) => {
+  const normalizedId =
+    typeof id === 'number' ? id.toString() : typeof id === 'string' ? id.trim() : '';
+
+  if (!slug || !normalizedId) {
+    throw new Error('Board slug and article id are required');
+  }
+
+  return request(
+    () => api.get(`/api/boards/${slug}/articles/${normalizedId}`),
+    'GET /api/boards/:slug/articles/:id',
+  );
+};
+
 export const createArticle = (payload) =>
   request(() => api.post('/api/articles', payload), 'POST /api/articles');
 
@@ -209,6 +270,19 @@ export const uploadArticleImage = (file, fieldName = 'file') => {
       }),
     'POST /api/uploads',
   );
+};
+
+export const createBoard = (payload) =>
+  request(() => api.post('/api/boards', payload), 'POST /api/boards');
+
+export const updateBoard = (id, payload) => {
+  if (!id) throw new Error('Board id is required');
+  return request(() => api.put(`/api/boards/${id}`, payload), 'PUT /api/boards/:id');
+};
+
+export const deleteBoard = (id) => {
+  if (!id) throw new Error('Board id is required');
+  return request(() => api.delete(`/api/boards/${id}`), 'DELETE /api/boards/:id');
 };
 
 export default api;

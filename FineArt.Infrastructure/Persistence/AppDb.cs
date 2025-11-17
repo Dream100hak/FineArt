@@ -11,6 +11,7 @@ public class AppDb : DbContext
     public DbSet<Artwork> Artworks => Set<Artwork>();
     public DbSet<Artist> Artists => Set<Artist>();
     public DbSet<Article> Articles => Set<Article>();
+    public DbSet<BoardType> BoardTypes => Set<BoardType>();
     public DbSet<User> Users => Set<User>();
     public DbSet<Exhibition> Exhibitions => Set<Exhibition>();
 
@@ -463,16 +464,78 @@ public class AppDb : DbContext
                 });
         });
 
+        modelBuilder.Entity<BoardType>(builder =>
+        {
+            builder.Property(b => b.Name).HasMaxLength(100).IsRequired();
+            builder.Property(b => b.Slug).HasMaxLength(100).IsRequired();
+            builder.Property(b => b.Description).HasMaxLength(255);
+            builder.HasIndex(b => b.Slug).IsUnique();
+
+            var boardSeedTimestamp = DateTime.SpecifyKind(new DateTime(2025, 1, 1), DateTimeKind.Utc);
+
+            builder.HasData(
+                new BoardType { Id = 1, Name = "공지사항", Slug = "notice", Description = "사이트 및 전시 관련 공지", CreatedAt = boardSeedTimestamp, UpdatedAt = boardSeedTimestamp },
+                new BoardType { Id = 2, Name = "자유게시판", Slug = "free", Description = "사용자 자유 토론", CreatedAt = boardSeedTimestamp, UpdatedAt = boardSeedTimestamp },
+                new BoardType { Id = 3, Name = "뉴스", Slug = "news", Description = "예술 관련 뉴스", CreatedAt = boardSeedTimestamp, UpdatedAt = boardSeedTimestamp },
+                new BoardType { Id = 4, Name = "채용", Slug = "recruit", Description = "미술 관련 채용 공고", CreatedAt = boardSeedTimestamp, UpdatedAt = boardSeedTimestamp },
+                new BoardType { Id = 5, Name = "전시/행사", Slug = "exhibition", Description = "FineArt 주관 행사 소식", CreatedAt = boardSeedTimestamp, UpdatedAt = boardSeedTimestamp }
+            );
+        });
+
         modelBuilder.Entity<Article>(builder =>
         {
-            builder.Property(a => a.Title).HasMaxLength(500);
-            builder.Property(a => a.Writer).HasMaxLength(128);
-            builder.Property(a => a.Category).HasMaxLength(64);
-            builder.Property(a => a.ImageUrl).HasMaxLength(2048);
-            builder.Property(a => a.ThumbnailUrl).HasMaxLength(2048);
+            builder.Property(a => a.Title).HasMaxLength(255).IsRequired();
+            builder.Property(a => a.Writer).HasMaxLength(100).IsRequired();
+            builder.Property(a => a.Email).HasMaxLength(255).IsRequired();
+            builder.Property(a => a.Category).HasMaxLength(100);
+            builder.Property(a => a.ImageUrl).HasMaxLength(500);
+            builder.Property(a => a.ThumbnailUrl).HasMaxLength(500);
             builder.Property(a => a.Views).HasDefaultValue(0);
-            builder.HasIndex(a => a.Category).HasDatabaseName("idx_articles_category");
             builder.HasIndex(a => a.CreatedAt).HasDatabaseName("idx_articles_created_at");
+            builder.HasOne(a => a.BoardType)
+                .WithMany(b => b.Articles)
+                .HasForeignKey(a => a.BoardTypeId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            var articleSeedTimestamp = DateTime.SpecifyKind(new DateTime(2025, 1, 10), DateTimeKind.Utc);
+
+            builder.HasData(
+                new Article
+                {
+                    Id = 90001,
+                    BoardTypeId = 1,
+                    Title = "서버 점검 안내",
+                    Content = "FineArt 시스템 점검이 예정되어 있습니다. 점검 시간 동안 일부 서비스 이용이 제한될 수 있습니다.",
+                    Writer = "관리자",
+                    Email = "admin@fineart.local",
+                    Views = 0,
+                    CreatedAt = articleSeedTimestamp,
+                    UpdatedAt = articleSeedTimestamp
+                },
+                new Article
+                {
+                    Id = 90002,
+                    BoardTypeId = 3,
+                    Title = "서울 아트페어 참가 공모",
+                    Content = "2025 서울 아트페어에 참가할 작가를 모집합니다.",
+                    Writer = "서울문화재단",
+                    Email = "news@fineart.local",
+                    Views = 0,
+                    CreatedAt = articleSeedTimestamp.AddDays(2),
+                    UpdatedAt = articleSeedTimestamp.AddDays(2)
+                },
+                new Article
+                {
+                    Id = 90003,
+                    BoardTypeId = 5,
+                    Title = "우하남展 개최",
+                    Content = "우하남 작가의 전시가 FineArt Cube에서 개최됩니다.",
+                    Writer = "FineArt",
+                    Email = "event@fineart.local",
+                    Views = 0,
+                    CreatedAt = articleSeedTimestamp.AddDays(5),
+                    UpdatedAt = articleSeedTimestamp.AddDays(5)
+                });
         });
 
         modelBuilder.Entity<Exhibition>(builder =>
@@ -675,5 +738,6 @@ public class AppDb : DbContext
                     CreatedAt = DateTime.SpecifyKind(new DateTime(2025, 6, 8), DateTimeKind.Utc)
                 });
         });
+
     }
 }
