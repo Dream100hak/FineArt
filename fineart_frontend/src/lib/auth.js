@@ -87,6 +87,9 @@ const resolveRoleFromPayload = (payload) => {
 let cachedSnapshot = defaultSnapshot;
 let cachedToken = null;
 
+const isPayloadExpired = (payload) =>
+  typeof payload?.exp === 'number' && payload.exp * 1000 <= Date.now();
+
 const buildSnapshot = (token, roleHint, emailHint) => {
   if (!token) {
     return defaultSnapshot;
@@ -95,6 +98,11 @@ const buildSnapshot = (token, roleHint, emailHint) => {
   try {
     const payload = decodeJwtPayload(token);
     if (!payload) {
+      return defaultSnapshot;
+    }
+
+    if (isPayloadExpired(payload)) {
+      clearAuthSession();
       return defaultSnapshot;
     }
 

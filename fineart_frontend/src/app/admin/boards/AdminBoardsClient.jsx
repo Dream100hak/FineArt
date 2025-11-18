@@ -1,32 +1,52 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import useDecodedAuth from '@/hooks/useDecodedAuth';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { createBoard, deleteBoard, getBoards, updateBoard } from '@/lib/api';
+import { notifyBoardsUpdated } from '@/lib/boardEvents';
+import LayoutPreview from '@/components/boards/LayoutPreview';
 
 const defaultForm = {
   name: '',
   slug: '',
   description: '',
-  layoutType: 'card',
+  layoutType: 'list',
   orderIndex: 0,
   parentId: '',
   isVisible: true,
 };
 
 const layoutOptions = [
-  { value: 'card', label: '카드형' },
-  { value: 'table', label: '테이블형' },
+  { value: 'card', label: '카드형', description: '카드 형태의 강조 그리드' },
+  { value: 'list', label: '리스트형', description: '요약된 리스트 뷰' },
+  { value: 'gallery', label: '갤러리형', description: '이미지 썸네일 중심' },
+  { value: 'media', label: '미디어형', description: '영상/미디어 콘텐츠용' },
+  { value: 'timeline', label: '타임라인형', description: '연혁 · 이벤트 라인' },
 ];
+
+const FALLBACK_LAYOUT_LABELS = {
+  table: '리스트형',
+};
+
+const getLayoutLabel = (value) =>
+  layoutOptions.find((option) => option.value === value)?.label ??
+  FALLBACK_LAYOUT_LABELS[value] ??
+  value;
+
+const normalizeLayoutType = (value) => {
+  const normalized = (value ?? 'list').toLowerCase();
+  return normalized === 'table' ? 'list' : normalized;
+};
 
 const normalizeBoards = (items = []) =>
   items.map((item, index) => ({
     id: item.id ?? index + 1,
-    name: item.name ?? '제목 미정',
+    name: item.name ?? '이름 미정',
     slug: item.slug ?? `board-${index + 1}`,
     description: item.description ?? '',
-    layoutType: (item.layoutType ?? 'card').toLowerCase(),
+    layoutType: normalizeLayoutType(item.layoutType),
     orderIndex: item.orderIndex ?? index,
     parentId: item.parentId ?? null,
     isVisible: item.isVisible ?? true,
@@ -43,6 +63,7 @@ const attachParentNames = (boards) => {
 };
 
 export default function AdminBoardsClient() {
+  const searchParams = useSearchParams();
   const { isAuthenticated, decodedRole } = useDecodedAuth();
   const isAdmin = decodedRole === 'admin';
   const canManage = isAuthenticated && isAdmin;
@@ -55,6 +76,14 @@ export default function AdminBoardsClient() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [keyword, setKeyword] = useState('');
+  const [pendingPrefillSlug, setPendingPrefillSlug] = useState('');
+  const [consumedPrefillSlug, setConsumedPrefillSlug] = useState('');
+
+  const normalizedFormLayoutType = normalizeLayoutType(form.layoutType);
+  const selectedLayout = useMemo(
+    () => layoutOptions.find((option) => option.value === normalizedFormLayoutType),
+    [normalizedFormLayoutType],
+  );
 
   const filteredBoards = useMemo(() => {
     if (!keyword.trim()) return boards;
@@ -91,10 +120,16 @@ export default function AdminBoardsClient() {
     fetchBoards();
   }, [fetchBoards]);
 
+  useEffect(() => {
+    const slugParam = searchParams?.get('slug')?.trim().toLowerCase() ?? '';
+    if (!slugParam || slugParam === consumedPrefillSlug) return;
+    setPendingPrefillSlug(slugParam);
+  }, [searchParams, consumedPrefillSlug]);
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     if (!form.name.trim()) {
-      setError('게시판 이름을 입력해 주세요.');
+      setError('게시판 이름을 입력해주세요.');
       return;
     }
 
@@ -103,11 +138,12 @@ export default function AdminBoardsClient() {
     setSuccess('');
 
     try {
+      const normalizedLayout = normalizeLayoutType(form.layoutType);
       const payload = {
         name: form.name.trim(),
         slug: form.slug.trim() || undefined,
         description: form.description.trim() || undefined,
-        layoutType: form.layoutType,
+        layoutType: normalizedLayout,
         orderIndex: Number(form.orderIndex) || 0,
         parentId: form.parentId ? Number(form.parentId) : null,
         isVisible: Boolean(form.isVisible),
@@ -123,7 +159,8 @@ export default function AdminBoardsClient() {
 
       setForm(defaultForm);
       setEditingId(null);
-      fetchBoards();
+      await fetchBoards();
+      notifyBoardsUpdated();
     } catch (err) {
       console.error('[Admin Boards] save failed', err);
       setError(err?.response?.data?.message ?? '저장 중 오류가 발생했습니다.');
@@ -138,13 +175,23 @@ export default function AdminBoardsClient() {
       name: board.name ?? '',
       slug: board.slug ?? '',
       description: board.description ?? '',
-      layoutType: board.layoutType ?? 'card',
+      layoutType: normalizeLayoutType(board.layoutType),
       orderIndex: board.orderIndex ?? 0,
       parentId: board.parentId ? String(board.parentId) : '',
       isVisible: board.isVisible ?? true,
     });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
+
+  useEffect(() => {
+    if (!pendingPrefillSlug || boards.length === 0) return;
+    const match = boards.find((board) => board.slug?.toLowerCase() === pendingPrefillSlug);
+    if (match) {
+      handleEdit(match);
+      setPendingPrefillSlug('');
+      setConsumedPrefillSlug(match.slug?.toLowerCase() ?? '');
+    }
+  }, [boards, pendingPrefillSlug]);
 
   const handleDelete = async (board) => {
     if (
@@ -157,10 +204,11 @@ export default function AdminBoardsClient() {
 
     try {
       await deleteBoard(board.id);
-      fetchBoards();
+      await fetchBoards();
+      notifyBoardsUpdated();
     } catch (err) {
       console.error('[Admin Boards] delete failed', err);
-      setError(err?.response?.data?.message ?? '게시판 삭제 중 오류가 발생했습니다.');
+      setError(err?.response?.data?.message ?? '게시판 삭제에 실패했습니다.');
     }
   };
 
@@ -168,18 +216,18 @@ export default function AdminBoardsClient() {
     return (
       <div className="screen-padding section mx-auto flex min-h-[60vh] w-full max-w-3xl flex-col items-center justify-center gap-4 text-center">
         <p className="text-lg font-semibold text-neutral-900">접근 권한이 필요합니다.</p>
-        <p className="text-sm text-neutral-600">관리자 계정으로 로그인한 뒤 다시 시도해 주세요.</p>
+        <p className="text-sm text-neutral-600">관리자 계정으로 로그인해 주세요.</p>
       </div>
     );
   }
 
   return (
     <div className="screen-padding section mx-auto flex w-full max-w-6xl flex-col gap-8 py-10">
-      <header className="space-y-3">
+      <header className="space-y-3 rounded-3xl border border-neutral-200 bg-white/90 p-6 shadow-sm">
         <p className="text-xs uppercase tracking-[0.3em] text-neutral-500">Board Management</p>
         <h1 className="text-4xl font-semibold text-neutral-900">게시판 관리</h1>
         <p className="text-sm text-neutral-600">
-          새 게시판을 만들고, 기본 레이아웃과 순서를 설정하거나 삭제할 수 있습니다.
+          새 게시판을 만들고 기본 레이아웃과 순서를 설정하거나 숨김 처리를 할 수 있습니다.
         </p>
         {error && (
           <p className="rounded-2xl border border-red-100 bg-red-50 px-4 py-2 text-xs text-red-700">
@@ -222,34 +270,38 @@ export default function AdminBoardsClient() {
           설명
           <textarea
             value={form.description}
-            onChange={(event) =>
-              setForm((prev) => ({ ...prev, description: event.target.value }))
-            }
+            onChange={(event) => setForm((prev) => ({ ...prev, description: event.target.value }))}
             className="mt-1 min-h-[100px] w-full rounded-2xl border border-neutral-200 px-4 py-2 focus:border-neutral-900 focus:outline-none"
             placeholder="게시판 소개 문구"
           />
         </label>
 
         <div className="grid gap-4 md:grid-cols-3">
-          <label className="text-sm font-medium text-neutral-700">
-            레이아웃
-            <select
-              value={form.layoutType}
-              onChange={(event) =>
-                setForm((prev) => ({ ...prev, layoutType: event.target.value }))
-              }
-              className="mt-1 w-full rounded-2xl border border-neutral-200 px-4 py-2 focus:border-neutral-900 focus:outline-none"
-            >
-              {layoutOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </label>
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-neutral-700">
+              레이아웃
+              <select
+                value={normalizedFormLayoutType}
+                onChange={(event) =>
+                  setForm((prev) => ({ ...prev, layoutType: event.target.value }))
+                }
+                className="mt-1 w-full rounded-2xl border border-neutral-200 px-4 py-2 focus:border-neutral-900 focus:outline-none"
+              >
+                {layoutOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            {selectedLayout?.description && (
+              <p className="text-xs text-neutral-500">{selectedLayout.description}</p>
+            )}
+            <LayoutPreview type={form.layoutType} />
+          </div>
 
           <label className="text-sm font-medium text-neutral-700">
-            순서
+            표시 순서
             <input
               type="number"
               value={form.orderIndex}
@@ -264,9 +316,7 @@ export default function AdminBoardsClient() {
             상위 게시판
             <select
               value={form.parentId}
-              onChange={(event) =>
-                setForm((prev) => ({ ...prev, parentId: event.target.value }))
-              }
+              onChange={(event) => setForm((prev) => ({ ...prev, parentId: event.target.value }))}
               className="mt-1 w-full rounded-2xl border border-neutral-200 px-4 py-2 focus:border-neutral-900 focus:outline-none"
             >
               <option value="">(없음)</option>
@@ -301,7 +351,7 @@ export default function AdminBoardsClient() {
                 setEditingId(null);
                 setForm(defaultForm);
               }}
-              className="rounded-full border border-neutral-200 px-4 py-2 text-sm text-neutral-600"
+              className="rounded-full border border-neutral-300 px-4 py-2 text-sm text-neutral-600 hover:border-neutral-900 hover:text-neutral-900"
               disabled={saving}
             >
               취소
@@ -317,21 +367,33 @@ export default function AdminBoardsClient() {
         </div>
       </form>
 
-      <section className="rounded-3xl border border-neutral-200 bg-white/80 p-6 shadow-sm">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <h2 className="text-xl font-semibold text-neutral-900">게시판 목록</h2>
+      <section className="rounded-3xl border border-neutral-200 bg-white/90 p-6 shadow-sm">
+        <form
+          className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between"
+          onSubmit={(event) => {
+            event.preventDefault();
+            setKeyword(keyword.trim());
+          }}
+        >
           <input
             type="text"
             value={keyword}
             onChange={(event) => setKeyword(event.target.value)}
             placeholder="이름 또는 슬러그 검색"
-            className="w-full max-w-xs rounded-full border border-neutral-200 px-4 py-2 text-sm focus:border-neutral-900 focus:outline-none"
+            className="w-full rounded-2xl border border-neutral-200 px-4 py-2 text-sm focus:border-neutral-900 focus:outline-none md:max-w-sm"
           />
-        </div>
+          <p className="text-sm text-neutral-500">
+            총{' '}
+            <span className="font-semibold text-neutral-900">
+              {filteredBoards.length.toLocaleString()}
+            </span>{' '}
+            개 게시판
+          </p>
+        </form>
 
         {loading ? (
           <div className="flex justify-center py-10">
-            <LoadingSpinner label="게시판 목록을 불러오는 중입니다..." />
+            <LoadingSpinner label="게시판을 불러오는 중입니다..." />
           </div>
         ) : (
           <div className="mt-4 overflow-x-auto rounded-3xl border border-neutral-100">
@@ -344,35 +406,43 @@ export default function AdminBoardsClient() {
                   <th className="px-4 py-3 text-left">순서</th>
                   <th className="px-4 py-3 text-left">상위</th>
                   <th className="px-4 py-3 text-left">표시</th>
-                  <th className="px-4 py-3 text-right">액션</th>
+                  <th className="px-4 py-3 text-left">액션</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-100 bg-white/80">
-                {filteredBoards.map((board) => (
-                  <tr key={board.id}>
-                    <td className="px-4 py-3 font-semibold text-neutral-900">{board.name}</td>
-                    <td className="px-4 py-3 text-neutral-600">{board.slug}</td>
+                {filteredBoards.map((item) => (
+                  <tr key={item.id}>
+                    <td className="px-4 py-3 font-semibold text-neutral-900">{item.name}</td>
+                    <td className="px-4 py-3 text-neutral-600">/{item.slug}</td>
                     <td className="px-4 py-3 text-neutral-600">
-                      {board.layoutType === 'table' ? '테이블' : '카드'}
+                      {getLayoutLabel(item.layoutType)}
                     </td>
-                    <td className="px-4 py-3 text-neutral-600">{board.orderIndex}</td>
-                    <td className="px-4 py-3 text-neutral-600">{board.parentName ?? '-'}</td>
-                    <td className="px-4 py-3 text-neutral-600">
-                      {board.isVisible ? '표시' : '숨김'}
+                    <td className="px-4 py-3 text-neutral-600">{item.orderIndex}</td>
+                    <td className="px-4 py-3 text-neutral-600">{item.parentName ?? '-'}</td>
+                    <td className="px-4 py-3">
+                      <span
+                        className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${
+                          item.isVisible
+                            ? 'bg-emerald-50 text-emerald-700'
+                            : 'bg-neutral-100 text-neutral-500'
+                        }`}
+                      >
+                        {item.isVisible ? '표시' : '숨김'}
+                      </span>
                     </td>
-                    <td className="px-4 py-3 text-right">
-                      <div className="inline-flex gap-2">
+                    <td className="px-4 py-3">
+                      <div className="flex gap-2">
                         <button
                           type="button"
-                          onClick={() => handleEdit(board)}
-                          className="rounded-full border border-neutral-200 px-3 py-1 text-xs text-neutral-600 transition hover:border-neutral-900 hover:text-neutral-900"
+                          onClick={() => handleEdit(item)}
+                          className="rounded-full border border-neutral-200 px-3 py-1 text-xs text-neutral-700 hover:border-neutral-900 hover:text-neutral-900"
                         >
                           수정
                         </button>
                         <button
                           type="button"
-                          onClick={() => handleDelete(board)}
-                          className="rounded-full border border-red-200 px-3 py-1 text-xs text-red-600 transition hover:border-red-500 hover:text-red-700"
+                          onClick={() => handleDelete(item)}
+                          className="rounded-full border border-red-200 px-3 py-1 text-xs text-red-600 hover:border-red-400 hover:text-red-700"
                         >
                           삭제
                         </button>
@@ -382,8 +452,8 @@ export default function AdminBoardsClient() {
                 ))}
                 {filteredBoards.length === 0 && (
                   <tr>
-                    <td className="px-4 py-8 text-center text-sm text-neutral-500" colSpan={7}>
-                      검색 조건에 맞는 게시판이 없습니다.
+                    <td colSpan={7} className="px-4 py-8 text-center text-sm text-neutral-500">
+                      조건에 맞는 게시판이 없습니다.
                     </td>
                   </tr>
                 )}

@@ -1,47 +1,42 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { FiFileText, FiGrid, FiLayers, FiSearch } from 'react-icons/fi';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { FiFileText } from 'react-icons/fi';
 import useDecodedAuth from '@/hooks/useDecodedAuth';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { getBoardArticles } from '@/lib/api';
+import CardBoard from '@/components/boards/CardBoard';
+import ListBoard from '@/components/boards/ListBoard';
+import GalleryBoard from '@/components/boards/GalleryBoard';
+import MediaBoard from '@/components/boards/MediaBoard';
+import TimelineBoard from '@/components/boards/TimelineBoard';
 
-const CATEGORY_FILTERS = [
-  { label: '전체', value: '' },
-  { label: '공지', value: 'notice' },
-  { label: '뉴스', value: 'news' },
-  { label: '전시/행사', value: 'event' },
-  { label: '채용', value: 'recruit' },
-  { label: '커뮤니티', value: 'community' },
-];
+const stripHtml = (value = '') =>
+  value
+    ?.replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 
 const normalizeArticle = (article, index) => {
   if (!article) return null;
   const boardInfo = article.board ?? article.Board ?? {};
   const content = article.content ?? '';
+  const excerptSource = article.excerpt ?? content;
+  const plainExcerpt = stripHtml(excerptSource)?.slice(0, 160) ?? '';
   return {
     id: article.id ?? article.Id ?? `article-${index}`,
     title: article.title ?? '제목 미정',
     content,
-    excerpt: article.excerpt ?? content.slice(0, 160),
+    excerpt: plainExcerpt || '내용을 불러올 수 없습니다.',
     writer: article.author ?? article.writer ?? 'FineArt',
     category: article.category ?? '',
     createdAt: article.createdAt ?? article.UpdatedAt ?? new Date().toISOString(),
     views: article.views ?? 0,
     boardSlug: boardInfo.slug ?? article.boardSlug ?? boardInfo?.Slug ?? '',
+    imageUrl: article.imageUrl ?? article.heroImage ?? '',
+    thumbnailUrl: article.thumbnailUrl ?? article.thumbUrl ?? '',
   };
-};
-
-const formatDate = (value) => {
-  if (!value) return '-';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '-';
-  return date.toLocaleDateString('ko-KR', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  });
 };
 
 export default function BoardArticlesClient({ board, initialData }) {
@@ -49,43 +44,21 @@ export default function BoardArticlesClient({ board, initialData }) {
   const isAdmin = decodedRole === 'admin';
   const canWrite = isAuthenticated && !initialData?.isFallback;
 
-  const [currentBoard, setCurrentBoard] = useState(initialData.board ?? board);
-  const [articles, setArticles] = useState(
-    (initialData.items ?? []).map(normalizeArticle).filter(Boolean),
+  const normalizedInitialArticles = useMemo(
+    () => (initialData.items ?? []).map(normalizeArticle).filter(Boolean),
+    [initialData.items],
   );
+
+  const [currentBoard, setCurrentBoard] = useState(initialData.board ?? board);
+  const [articles, setArticles] = useState(normalizedInitialArticles);
   const [meta, setMeta] = useState({
     page: initialData.page ?? 1,
     size: initialData.size ?? 12,
     total: initialData.total ?? initialData.items?.length ?? 0,
   });
-  const [category, setCategory] = useState('');
-  const [searchValue, setSearchValue] = useState('');
-  const [keyword, setKeyword] = useState('');
-  const [viewMode, setViewMode] = useState(
-    (currentBoard?.layoutType ?? 'card').toLowerCase() === 'table' ? 'table' : 'cards',
-  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(initialData.error ?? null);
   const [isFallback, setIsFallback] = useState(initialData.isFallback ?? false);
-
-  const searchDebounceRef = useRef(null);
-  const keywordRef = useRef(keyword);
-  const categoryRef = useRef(category);
-
-  useEffect(() => {
-    keywordRef.current = keyword;
-  }, [keyword]);
-
-  useEffect(() => {
-    categoryRef.current = category;
-  }, [category]);
-
-  useEffect(() => {
-    setViewMode(
-      (currentBoard?.layoutType ?? 'card').toLowerCase() === 'table' ? 'table' : 'cards',
-    );
-  }, [currentBoard?.layoutType, currentBoard?.slug]);
-
   const fetchArticles = useCallback(
     async (pageOverride = 1) => {
       setLoading(true);
@@ -94,8 +67,6 @@ export default function BoardArticlesClient({ board, initialData }) {
         const payload = await getBoardArticles(board.slug, {
           page: pageOverride,
           size: meta.size,
-          category: categoryRef.current || undefined,
-          keyword: keywordRef.current || undefined,
         });
 
         setArticles((payload?.items ?? []).map(normalizeArticle).filter(Boolean));
@@ -126,24 +97,26 @@ export default function BoardArticlesClient({ board, initialData }) {
   }, [initialData?.isFallback, fetchArticles]);
 
   useEffect(() => {
-    if (searchDebounceRef.current) {
-      clearTimeout(searchDebounceRef.current);
-    }
-
-    searchDebounceRef.current = setTimeout(() => {
-      setKeyword(searchValue.trim());
-    }, 400);
-
-    return () => {
-      if (searchDebounceRef.current) {
-        clearTimeout(searchDebounceRef.current);
-      }
-    };
-  }, [searchValue]);
-
-  useEffect(() => {
-    fetchArticles(1);
-  }, [category, keyword, fetchArticles]);
+    setCurrentBoard(initialData.board ?? board);
+    setArticles(normalizedInitialArticles);
+    setMeta({
+      page: initialData.page ?? 1,
+      size: initialData.size ?? 12,
+      total: initialData.total ?? initialData.items?.length ?? normalizedInitialArticles.length ?? 0,
+    });
+    setError(initialData.error ?? null);
+    setIsFallback(initialData.isFallback ?? false);
+  }, [
+    board,
+    initialData.board,
+    initialData.page,
+    initialData.size,
+    initialData.total,
+    initialData.items,
+    initialData.error,
+    initialData.isFallback,
+    normalizedInitialArticles,
+  ]);
 
   const totalPages = Math.max(1, Math.ceil(meta.total / meta.size));
 
@@ -154,96 +127,15 @@ export default function BoardArticlesClient({ board, initialData }) {
     fetchArticles(nextPage);
   };
 
-  const renderCategoryTabs = () => (
-    <div className="flex flex-wrap gap-2">
-      {CATEGORY_FILTERS.map((tab) => {
-        const isActive = category === tab.value;
-        return (
-          <button
-            key={tab.value || 'all'}
-            type="button"
-            onClick={() => setCategory(tab.value)}
-            className={`rounded-full border px-4 py-1.5 text-xs font-semibold transition ${
-              isActive
-                ? 'border-neutral-900 bg-neutral-900 text-white'
-                : 'border-neutral-200 text-neutral-600 hover:border-neutral-900 hover:text-neutral-900'
-            }`}
-          >
-            {tab.label}
-          </button>
-        );
-      })}
-    </div>
-  );
-
-  const renderCards = () => (
-    <div className="grid gap-4 md:grid-cols-2">
-      {articles.map((article) => (
-        <article
-          key={article.id}
-          className="flex flex-col justify-between rounded-3xl border border-neutral-100 bg-white/90 p-5 shadow-sm"
-        >
-          <div className="space-y-3">
-            <p className="text-xs uppercase tracking-[0.3em] text-neutral-400">
-              {article.category || '카테고리'}
-            </p>
-            <Link
-              href={`/boards/${board.slug}/${article.id}`}
-              className="text-2xl font-semibold text-neutral-900 hover:underline"
-            >
-              {article.title}
-            </Link>
-            <p className="text-sm text-neutral-600 line-clamp-3">{article.excerpt}</p>
-          </div>
-          <div className="mt-4 flex items-center justify-between text-xs text-neutral-500">
-            <span>
-              {article.writer} · {formatDate(article.createdAt)}
-            </span>
-            <span>조회 {article.views?.toLocaleString?.() ?? article.views}</span>
-          </div>
-        </article>
-      ))}
-    </div>
-  );
-
-  const renderTable = () => (
-    <div className="overflow-hidden rounded-3xl border border-neutral-100 bg-white/90 shadow-sm">
-      <table className="min-w-full divide-y divide-neutral-100 text-sm">
-        <thead className="bg-neutral-50 text-xs uppercase tracking-wide text-neutral-500">
-          <tr>
-            <th className="px-4 py-3 text-left">제목</th>
-            <th className="px-4 py-3 text-left">작성자</th>
-            <th className="px-4 py-3 text-left">작성일</th>
-            <th className="px-4 py-3 text-right">조회수</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-neutral-100 bg-white/80">
-          {articles.map((article) => (
-            <tr key={article.id}>
-              <td className="px-4 py-3">
-                <div className="flex flex-col">
-                  <Link
-                    href={`/boards/${board.slug}/${article.id}`}
-                    className="font-semibold text-neutral-900 hover:underline"
-                  >
-                    {article.title}
-                  </Link>
-                  <span className="text-xs uppercase tracking-[0.3em] text-neutral-400">
-                    {article.category || '기타'}
-                  </span>
-                </div>
-              </td>
-              <td className="px-4 py-3 text-neutral-600">{article.writer}</td>
-              <td className="px-4 py-3 text-neutral-600">{formatDate(article.createdAt)}</td>
-              <td className="px-4 py-3 text-right text-neutral-600">
-                {article.views?.toLocaleString?.() ?? article.views}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
+  const layoutComponents = {
+    card: CardBoard,
+    cards: CardBoard,
+    table: ListBoard,
+    list: ListBoard,
+    gallery: GalleryBoard,
+    media: MediaBoard,
+    timeline: TimelineBoard,
+  };
 
   const renderContent = () => {
     if (loading) {
@@ -262,7 +154,14 @@ export default function BoardArticlesClient({ board, initialData }) {
       );
     }
 
-    return viewMode === 'table' ? renderTable() : renderCards();
+    const normalizedLayout = (currentBoard?.layoutType ?? 'card').toLowerCase();
+    const LayoutComponent = layoutComponents[normalizedLayout] ?? CardBoard;
+    return (
+      <LayoutComponent
+        board={currentBoard ?? board}
+        articles={articles}
+      />
+    );
   };
 
   return (
@@ -287,7 +186,7 @@ export default function BoardArticlesClient({ board, initialData }) {
             </p>
             {isAdmin && (
               <Link
-                href="/admin/boards"
+                href={`/admin/boards?slug=${encodeURIComponent(currentBoard?.slug ?? board.slug ?? '')}`}
                 className="rounded-full border border-neutral-200 px-4 py-2 transition hover:border-neutral-900 hover:text-neutral-900"
               >
                 게시판 설정
@@ -323,42 +222,6 @@ export default function BoardArticlesClient({ board, initialData }) {
       </header>
 
       <section className="space-y-4 rounded-3xl border border-neutral-200 bg-white/80 p-6 shadow-sm">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          {renderCategoryTabs()}
-          <div className="flex items-center gap-3">
-            <div className="relative">
-              <FiSearch className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400" />
-              <input
-                type="text"
-                value={searchValue}
-                onChange={(event) => setSearchValue(event.target.value)}
-                placeholder="검색어를 입력하세요"
-                className="w-full rounded-full border border-neutral-200 bg-white px-12 py-2 text-sm text-neutral-700 focus:border-neutral-900 focus:outline-none"
-              />
-            </div>
-            <div className="flex rounded-full border border-neutral-200 bg-white p-1 text-xs font-semibold text-neutral-500">
-              <button
-                type="button"
-                onClick={() => setViewMode('cards')}
-                className={`inline-flex items-center gap-1 rounded-full px-3 py-1 ${
-                  viewMode === 'cards' ? 'bg-neutral-900 text-white' : 'hover:text-neutral-900'
-                }`}
-              >
-                <FiGrid /> 카드
-              </button>
-              <button
-                type="button"
-                onClick={() => setViewMode('table')}
-                className={`inline-flex items-center gap-1 rounded-full px-3 py-1 ${
-                  viewMode === 'table' ? 'bg-neutral-900 text-white' : 'hover:text-neutral-900'
-                }`}
-              >
-                <FiLayers /> 테이블
-              </button>
-            </div>
-          </div>
-        </div>
-
         {renderContent()}
 
         <div className="flex flex-col items-center gap-3 text-sm text-neutral-600 md:flex-row md:justify-between">

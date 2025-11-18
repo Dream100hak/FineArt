@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   FiChevronDown,
   FiFeather,
@@ -16,12 +16,12 @@ import useDecodedAuth from '@/hooks/useDecodedAuth';
 import { clearAuthSession } from '@/lib/auth';
 import { getBoardsSidebar } from '@/lib/api';
 import { buildFallbackSidebarTree } from '@/lib/boardFallbacks';
+import { BOARDS_UPDATED_EVENT } from '@/lib/boardEvents';
 
 const PRIMARY_LINKS = [
   { href: '/', label: '홈', color: 'bg-lime-700' },
   { href: '/exhibitions', label: '전시', color: 'bg-lime-500' },
   { href: '/sales', label: '판매', color: 'bg-amber-500' },
-  { href: '/boards', label: '게시판', color: 'bg-orange-500' },
 ];
 
 const INFO_LINKS = [
@@ -52,26 +52,30 @@ export default function Sidebar() {
   const [boardTree, setBoardTree] = useState([]);
   const [collapsedMap, setCollapsedMap] = useState({});
 
-  useEffect(() => {
-    let active = true;
-    const loadBoards = async () => {
-      try {
-        const payload = await getBoardsSidebar();
-        if (!active) return;
-        setBoardTree(payload?.items ?? []);
-      } catch (error) {
-        console.warn('[Sidebar] Failed to load boards, using fallback:', error);
-        if (active) {
-          setBoardTree(buildFallbackSidebarTree());
-        }
-      }
-    };
-
-    loadBoards();
-    return () => {
-      active = false;
-    };
+  const loadBoards = useCallback(async () => {
+    try {
+      const payload = await getBoardsSidebar();
+      setBoardTree(payload?.items ?? []);
+    } catch (error) {
+      console.warn('[Sidebar] Failed to load boards, using fallback:', error);
+      setBoardTree(buildFallbackSidebarTree());
+    }
   }, []);
+
+  useEffect(() => {
+    loadBoards();
+  }, [loadBoards]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return () => {};
+    const handler = () => {
+      loadBoards();
+    };
+    window.addEventListener(BOARDS_UPDATED_EVENT, handler);
+    return () => {
+      window.removeEventListener(BOARDS_UPDATED_EVENT, handler);
+    };
+  }, [loadBoards]);
 
   const activeSegment = useMemo(() => {
     if (!pathname) return '/';
@@ -171,7 +175,6 @@ export default function Sidebar() {
             <Link href={href} onClick={() => setIsDrawerOpen(false)} className="flex-1">
               {node.name}
             </Link>
-            <span className="text-xxs text-neutral-400">{node.articleCount ?? 0}</span>
           </div>
           {hasChildren && !isCollapsed && (
             <div className="space-y-1 border-l border-dashed border-neutral-200 pl-2">
@@ -202,6 +205,10 @@ export default function Sidebar() {
 
         <div className="space-y-2">{PRIMARY_LINKS.map(renderPrimaryLink)}</div>
 
+        <div className="my-4 border-t border-neutral-300" />
+        <p className="px-4 text-xs font-semibold uppercase tracking-[0.3em] text-neutral-500">
+          게시판
+        </p>
         <div className="space-y-2">{renderBoardNodes(boardTree)}</div>
 
         <div className="space-y-1 border-l-2 border-neutral-800/40 pl-4 text-xs text-neutral-600">

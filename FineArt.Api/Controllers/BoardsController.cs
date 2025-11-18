@@ -277,17 +277,21 @@ public class BoardsController : ControllerBase
         return null;
     }
 
+    private static BoardLayoutType NormalizeLayout(BoardLayoutType layout) =>
+        layout == BoardLayoutType.Table ? BoardLayoutType.List : layout;
+
     private static object MapBoardResponse(BoardType board, IReadOnlyDictionary<int, int>? counts = null)
     {
         counts ??= new Dictionary<int, int>();
         counts.TryGetValue(board.Id, out var articleCount);
+        var effectiveLayout = NormalizeLayout(board.LayoutType);
         return new
         {
             id = board.Id,
             board.Name,
             board.Slug,
             board.Description,
-            layoutType = board.LayoutType.ToString().ToLowerInvariant(),
+            layoutType = effectiveLayout.ToString().ToLowerInvariant(),
             board.OrderIndex,
             board.ParentId,
             board.IsVisible,
@@ -322,18 +326,19 @@ public class BoardsController : ControllerBase
     {
         if (string.IsNullOrWhiteSpace(layoutValue))
         {
-            layoutType = BoardLayoutType.Card;
+            layoutType = BoardLayoutType.List;
             error = null;
             return true;
         }
 
         if (Enum.TryParse(layoutValue, true, out layoutType))
         {
+            layoutType = NormalizeLayout(layoutType);
             error = null;
             return true;
         }
 
-        layoutType = BoardLayoutType.Card;
+        layoutType = BoardLayoutType.List;
         error = "Invalid layout type.";
         return false;
     }
@@ -402,7 +407,7 @@ public class BoardsController : ControllerBase
                 child.Name,
                 child.Slug,
                 child.Description,
-                layoutType = child.LayoutType.ToString().ToLowerInvariant(),
+                layoutType = NormalizeLayout(child.LayoutType).ToString().ToLowerInvariant(),
                 child.OrderIndex,
                 child.ParentId,
                 child.IsVisible,
