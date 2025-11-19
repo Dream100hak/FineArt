@@ -101,6 +101,7 @@ public class ArticlesController : ControllerBase
             return BadRequest(new { message = "BoardTypeId does not exist." });
         }
 
+        var canPin = User?.IsInRole("Admin") == true;
         var article = await _articleCommandService.CreateAsync(
             request.BoardTypeId,
             request.Title,
@@ -110,6 +111,7 @@ public class ArticlesController : ControllerBase
             request.Category,
             request.ImageUrl,
             request.ThumbnailUrl,
+            canPin && request.IsPinned,
             cancellationToken);
 
         return CreatedAtAction(nameof(GetById), new { id = article.Id }, MapArticleResponse(article));
@@ -151,6 +153,7 @@ public class ArticlesController : ControllerBase
             request.Category,
             request.ImageUrl,
             request.ThumbnailUrl,
+            request.IsPinned,
             cancellationToken);
 
         if (article is null)
@@ -185,6 +188,7 @@ public class ArticlesController : ControllerBase
         article.Email,
         article.Category,
         article.Views,
+        article.IsPinned,
         article.ImageUrl,
         article.ThumbnailUrl,
         Images = BuildImageSet(article.ImageUrl, article.ThumbnailUrl),

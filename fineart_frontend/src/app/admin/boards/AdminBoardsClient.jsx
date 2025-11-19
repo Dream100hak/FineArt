@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
@@ -19,11 +19,11 @@ const defaultForm = {
 };
 
 const layoutOptions = [
-  { value: 'card', label: '카드형', description: '카드 형태의 강조 그리드' },
-  { value: 'list', label: '리스트형', description: '요약된 리스트 뷰' },
+  { value: 'card', label: '카드형', description: '카드 형태로 강조되는 그리드' },
+  { value: 'list', label: '리스트형', description: '간결한 요약 리스트' },
   { value: 'gallery', label: '갤러리형', description: '이미지 썸네일 중심' },
-  { value: 'media', label: '미디어형', description: '영상/미디어 콘텐츠용' },
-  { value: 'timeline', label: '타임라인형', description: '연혁 · 이벤트 라인' },
+  { value: 'media', label: '미디어형', description: '영상·미디어 콘텐츠용' },
+  { value: 'timeline', label: '타임라인형', description: '연혁/이벤트 타임라인' },
 ];
 
 const FALLBACK_LAYOUT_LABELS = {
@@ -129,7 +129,7 @@ export default function AdminBoardsClient() {
   const handleSubmit = async (event) => {
     event.preventDefault();
     if (!form.name.trim()) {
-      setError('게시판 이름을 입력해주세요.');
+      setError('게시판 이름을 입력해 주세요.');
       return;
     }
 
@@ -163,7 +163,7 @@ export default function AdminBoardsClient() {
       notifyBoardsUpdated();
     } catch (err) {
       console.error('[Admin Boards] save failed', err);
-      setError(err?.response?.data?.message ?? '저장 중 오류가 발생했습니다.');
+      setError(err?.response?.data?.message ?? '알 수 없는 오류가 발생했습니다.');
     } finally {
       setSaving(false);
     }
@@ -196,7 +196,7 @@ export default function AdminBoardsClient() {
   const handleDelete = async (board) => {
     if (
       !window.confirm(
-        `"${board.name}" 게시판을 삭제하면 연결된 게시글도 함께 삭제됩니다. 계속하시겠습니까?`,
+        `"${board.name}" 게시판을 삭제하면 연결된 게시글까지 모두 삭제됩니다. 계속 진행할까요?`,
       )
     ) {
       return;
@@ -227,7 +227,7 @@ export default function AdminBoardsClient() {
         <p className="text-xs uppercase tracking-[0.3em] text-neutral-500">Board Management</p>
         <h1 className="text-4xl font-semibold text-neutral-900">게시판 관리</h1>
         <p className="text-sm text-neutral-600">
-          새 게시판을 만들고 기본 레이아웃과 순서를 설정하거나 숨김 처리를 할 수 있습니다.
+          새 게시판을 만들고 기본 레이아웃과 순서를 설정한 뒤 노출 여부를 손쉽게 조정할 수 있습니다.
         </p>
         {error && (
           <p className="rounded-2xl border border-red-100 bg-red-50 px-4 py-2 text-xs text-red-700">
@@ -297,7 +297,7 @@ export default function AdminBoardsClient() {
             {selectedLayout?.description && (
               <p className="text-xs text-neutral-500">{selectedLayout.description}</p>
             )}
-            <LayoutPreview type={form.layoutType} />
+            <LayoutPreview type={normalizedFormLayoutType} />
           </div>
 
           <label className="text-sm font-medium text-neutral-700">
@@ -387,7 +387,7 @@ export default function AdminBoardsClient() {
             <span className="font-semibold text-neutral-900">
               {filteredBoards.length.toLocaleString()}
             </span>{' '}
-            개 게시판
+            개의 게시판
           </p>
         </form>
 
@@ -465,3 +465,9 @@ export default function AdminBoardsClient() {
     </div>
   );
 }
+
+
+
+
+
+

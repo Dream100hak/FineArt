@@ -18,6 +18,12 @@ const stripHtml = (value = '') =>
     .replace(/\s+/g, ' ')
     .trim();
 
+const CATEGORY_KEYS = new Set(['notice', 'general']);
+const normalizeCategoryValue = (value) => {
+  const normalized = (value ?? '').toLowerCase();
+  return CATEGORY_KEYS.has(normalized) ? normalized : 'general';
+};
+
 const normalizeArticle = (article, index) => {
   if (!article) return null;
   const boardInfo = article.board ?? article.Board ?? {};
@@ -30,14 +36,24 @@ const normalizeArticle = (article, index) => {
     content,
     excerpt: plainExcerpt || '내용을 불러올 수 없습니다.',
     writer: article.author ?? article.writer ?? 'FineArt',
-    category: article.category ?? '',
+    category: normalizeCategoryValue(article.category),
     createdAt: article.createdAt ?? article.UpdatedAt ?? new Date().toISOString(),
     views: article.views ?? 0,
     boardSlug: boardInfo.slug ?? article.boardSlug ?? boardInfo?.Slug ?? '',
     imageUrl: article.imageUrl ?? article.heroImage ?? '',
     thumbnailUrl: article.thumbnailUrl ?? article.thumbUrl ?? '',
+    isPinned: Boolean(article.isPinned ?? article.IsPinned),
   };
 };
+
+const sortArticles = (items) =>
+  [...items].sort((a, b) => {
+    if (a.isPinned && !b.isPinned) return -1;
+    if (!a.isPinned && b.isPinned) return 1;
+    const dateDiff = new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    if (dateDiff !== 0) return dateDiff;
+    return (Number(b.id) || 0) - (Number(a.id) || 0);
+  });
 
 export default function BoardArticlesClient({ board, initialData }) {
   const { decodedRole, isAuthenticated } = useDecodedAuth();
@@ -45,7 +61,7 @@ export default function BoardArticlesClient({ board, initialData }) {
   const canWrite = isAuthenticated && !initialData?.isFallback;
 
   const normalizedInitialArticles = useMemo(
-    () => (initialData.items ?? []).map(normalizeArticle).filter(Boolean),
+    () => sortArticles((initialData.items ?? []).map(normalizeArticle).filter(Boolean)),
     [initialData.items],
   );
 
@@ -69,7 +85,7 @@ export default function BoardArticlesClient({ board, initialData }) {
           size: meta.size,
         });
 
-        setArticles((payload?.items ?? []).map(normalizeArticle).filter(Boolean));
+        setArticles(sortArticles((payload?.items ?? []).map(normalizeArticle).filter(Boolean)));
         setMeta({
           page: payload?.page ?? pageOverride,
           size: payload?.size ?? meta.size,
@@ -155,11 +171,13 @@ export default function BoardArticlesClient({ board, initialData }) {
     }
 
     const normalizedLayout = (currentBoard?.layoutType ?? 'card').toLowerCase();
-    const LayoutComponent = layoutComponents[normalizedLayout] ?? CardBoard;
+    const layoutKey = normalizedLayout === 'table' ? 'list' : normalizedLayout;
+    const LayoutComponent = layoutComponents[layoutKey] ?? CardBoard;
     return (
       <LayoutComponent
         board={currentBoard ?? board}
         articles={articles}
+        meta={meta}
       />
     );
   };

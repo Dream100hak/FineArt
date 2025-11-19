@@ -8,4 +8,5 @@ public record ArticleCreateRequest(
     string Email,
     string? Category,
     string? ImageUrl,
-    string? ThumbnailUrl);
+    string? ThumbnailUrl,
+    bool IsPinned = false);

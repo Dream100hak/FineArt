@@ -27,6 +27,11 @@ const layoutOptions = [
   { value: 'timeline', label: '타임라인형' },
 ];
 
+const normalizeLayoutType = (value) => {
+  const normalized = (value ?? 'list').toLowerCase();
+  return normalized === 'table' ? 'list' : normalized;
+};
+
 const LAYOUT_LABELS = {
   table: '리스트형',
   card: '카드형',
@@ -46,7 +51,7 @@ const normalizeBoards = (items = []) =>
       item.articleCount ?? item.articlesCount ?? item.postsCount ?? item.count ?? 0,
     createdAt: item.createdAt ?? null,
     updatedAt: item.updatedAt ?? null,
-    layoutType: (item.layoutType ?? 'card').toLowerCase(),
+    layoutType: normalizeLayoutType(item.layoutType),
     orderIndex: item.orderIndex ?? index,
     parentId: item.parentId ?? null,
     isVisible: item.isVisible ?? true,

@@ -9,6 +9,11 @@ import { createArticle, updateArticle, uploadArticleImage } from '@/lib/api';
 import RichTextEditor from '@/components/RichTextEditor';
 import { notifyBoardsUpdated } from '@/lib/boardEvents';
 
+const ARTICLE_CATEGORY_OPTIONS = [
+  { value: 'general', label: '일반' },
+  { value: 'notice', label: '공지' },
+];
+
 const defaultForm = {
   title: '',
   writer: '',
@@ -16,6 +21,8 @@ const defaultForm = {
   content: '',
   imageUrl: '',
   thumbnailUrl: '',
+  category: 'general',
+  isPinned: false,
 };
 
 const resolveUploadUrl = (payload) =>
@@ -33,6 +40,10 @@ export default function BoardEditorClient({ board, initialArticle }) {
     content: initialArticle?.content ?? defaultForm.content,
     imageUrl: initialArticle?.imageUrl ?? defaultForm.imageUrl,
     thumbnailUrl: initialArticle?.thumbnailUrl ?? defaultForm.thumbnailUrl,
+    category:
+      initialArticle?.category?.toLowerCase?.() ??
+      defaultForm.category,
+    isPinned: initialArticle?.isPinned ?? defaultForm.isPinned,
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -92,6 +103,20 @@ export default function BoardEditorClient({ board, initialArticle }) {
             로그인
           </Link>
         </div>
+
+        {isAdmin && (
+          <label className="flex items-center gap-2 text-sm font-medium text-neutral-700">
+            <input
+              type="checkbox"
+              checked={form.isPinned}
+              onChange={(event) =>
+                setForm((prev) => ({ ...prev, isPinned: event.target.checked }))
+              }
+              className="h-4 w-4 rounded border-neutral-300 text-neutral-900 focus:ring-neutral-900"
+            />
+            공지글로 상단에 고정
+          </label>
+        )}
       </div>
     );
   }
@@ -130,6 +155,8 @@ export default function BoardEditorClient({ board, initialArticle }) {
         email: form.email.trim() || decodedEmail || 'user@fineart.local',
         imageUrl: form.imageUrl || undefined,
         thumbnailUrl: form.thumbnailUrl || undefined,
+        category: isAdmin ? form.category : defaultForm.category,
+        isPinned: isAdmin ? form.isPinned : false,
       };
 
       if (isEditing) {
@@ -204,10 +231,29 @@ export default function BoardEditorClient({ board, initialArticle }) {
               value={form.email}
               onChange={(event) => setForm((prev) => ({ ...prev, email: event.target.value }))}
               className="mt-1 w-full rounded-2xl border border-neutral-200 px-4 py-2 focus:border-neutral-900 focus:outline-none"
-              placeholder="contact@example.com"
-            />
+            placeholder="contact@example.com"
+          />
+        </label>
+      </div>
+
+        {isAdmin && (
+          <label className="text-sm font-medium text-neutral-700">
+            게시글 구분
+            <select
+              value={form.category}
+              onChange={(event) =>
+                setForm((prev) => ({ ...prev, category: event.target.value }))
+              }
+              className="mt-1 w-full rounded-2xl border border-neutral-200 px-4 py-2 focus:border-neutral-900 focus:outline-none"
+            >
+              {ARTICLE_CATEGORY_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
           </label>
-        </div>
+        )}
 
         <div className="grid gap-4 md:grid-cols-2">
           <div className="space-y-2">

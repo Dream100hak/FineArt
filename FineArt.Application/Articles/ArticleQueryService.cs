@@ -82,12 +82,15 @@ public class ArticleQueryService
         return query;
     }
 
-    private static IQueryable<Article> ApplySort(IQueryable<Article> query, string? sort) =>
-        sort switch
+    private static IQueryable<Article> ApplySort(IQueryable<Article> query, string? sort)
+    {
+        var baseQuery = query.OrderByDescending(a => a.IsPinned);
+        return sort switch
         {
-            "oldest" => query.OrderBy(a => a.CreatedAt).ThenBy(a => a.Id),
-            "-views" => query.OrderByDescending(a => a.Views).ThenByDescending(a => a.CreatedAt),
-            "+views" => query.OrderBy(a => a.Views).ThenByDescending(a => a.CreatedAt),
-            _ => query.OrderByDescending(a => a.CreatedAt).ThenByDescending(a => a.Id)
+            "oldest" => baseQuery.ThenBy(a => a.CreatedAt).ThenBy(a => a.Id),
+            "-views" => baseQuery.ThenByDescending(a => a.Views).ThenByDescending(a => a.CreatedAt),
+            "+views" => baseQuery.ThenBy(a => a.Views).ThenByDescending(a => a.CreatedAt),
+            _ => baseQuery.ThenByDescending(a => a.CreatedAt).ThenByDescending(a => a.Id),
         };
+    }
 }

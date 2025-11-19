@@ -23,6 +23,7 @@ public class ArticleCommandService
         string? category,
         string? imageUrl,
         string? thumbnailUrl,
+        bool isPinned,
         CancellationToken cancellationToken = default)
     {
         var now = DateTime.UtcNow;
@@ -37,6 +38,7 @@ public class ArticleCommandService
             ImageUrl = imageUrl?.Trim(),
             ThumbnailUrl = thumbnailUrl?.Trim(),
             Views = 0,
+            IsPinned = isPinned,
             CreatedAt = now,
             UpdatedAt = now
         };
@@ -58,6 +60,7 @@ public class ArticleCommandService
         string? category,
         string? imageUrl,
         string? thumbnailUrl,
+        bool isPinned,
         CancellationToken cancellationToken = default)
     {
         var article = await _articles.FirstOrDefaultAsync(a => a.Id == id, cancellationToken);
@@ -74,6 +77,7 @@ public class ArticleCommandService
         article.Category = NormalizeCategory(category);
         article.ImageUrl = imageUrl?.Trim();
         article.ThumbnailUrl = thumbnailUrl?.Trim();
+        article.IsPinned = isPinned;
         article.UpdatedAt = DateTime.UtcNow;
 
         await _db.SaveChangesAsync(cancellationToken);

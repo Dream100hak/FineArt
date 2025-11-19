@@ -429,6 +429,7 @@ public class BoardsController : ControllerBase
         Writer = article.Writer,
         article.Email,
         article.Views,
+        article.IsPinned,
         article.ImageUrl,
         article.ThumbnailUrl,
         article.CreatedAt,

@@ -206,9 +206,6 @@ export default function Sidebar() {
         <div className="space-y-2">{PRIMARY_LINKS.map(renderPrimaryLink)}</div>
 
         <div className="my-4 border-t border-neutral-300" />
-        <p className="px-4 text-xs font-semibold uppercase tracking-[0.3em] text-neutral-500">
-          게시판
-        </p>
         <div className="space-y-2">{renderBoardNodes(boardTree)}</div>
 
         <div className="space-y-1 border-l-2 border-neutral-800/40 pl-4 text-xs text-neutral-600">

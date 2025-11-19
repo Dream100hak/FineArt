@@ -13,6 +13,7 @@ public class Article
     public string? ImageUrl { get; set; }
     public string? ThumbnailUrl { get; set; }
     public int Views { get; set; }
+    public bool IsPinned { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 }

@@ -53,6 +53,9 @@ namespace FineArt.Infrastructure.Persistence.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("varchar(500)");
 
+                    b.Property<bool>("IsPinned")
+                        .HasColumnType("bit(1)");
+
                     b.Property<string>("ThumbnailUrl")
                         .HasMaxLength(500)
                         .HasColumnType("varchar(500)");
@@ -92,6 +95,7 @@ namespace FineArt.Infrastructure.Persistence.Migrations
                             Content = "FineArt 시스템 점검이 예정되어 있습니다. 점검 시간 동안 일부 서비스 이용이 제한될 수 있습니다.",
                             CreatedAt = new DateTime(2025, 1, 10, 0, 0, 0, 0, DateTimeKind.Utc),
                             Email = "admin@fineart.local",
+                            IsPinned = false,
                             Title = "서버 점검 안내",
                             UpdatedAt = new DateTime(2025, 1, 10, 0, 0, 0, 0, DateTimeKind.Utc),
                             Views = 0,
@@ -104,6 +108,7 @@ namespace FineArt.Infrastructure.Persistence.Migrations
                             Content = "2025 서울 아트페어에 참가할 작가를 모집합니다.",
                             CreatedAt = new DateTime(2025, 1, 12, 0, 0, 0, 0, DateTimeKind.Utc),
                             Email = "news@fineart.local",
+                            IsPinned = false,
                             Title = "서울 아트페어 참가 공모",
                             UpdatedAt = new DateTime(2025, 1, 12, 0, 0, 0, 0, DateTimeKind.Utc),
                             Views = 0,
@@ -116,6 +121,7 @@ namespace FineArt.Infrastructure.Persistence.Migrations
                             Content = "우하남 작가의 전시가 FineArt Cube에서 개최됩니다.",
                             CreatedAt = new DateTime(2025, 1, 15, 0, 0, 0, 0, DateTimeKind.Utc),
                             Email = "event@fineart.local",
+                            IsPinned = false,
                             Title = "우하남展 개최",
                             UpdatedAt = new DateTime(2025, 1, 15, 0, 0, 0, 0, DateTimeKind.Utc),
                             Views = 0,

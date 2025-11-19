@@ -107,6 +107,7 @@ public class BoardPostsController : ControllerBase
             request.Category,
             null,
             null,
+            false,
             cancellationToken);
 
         return CreatedAtAction(nameof(GetById), new { id = post.Id }, MapToResponse(post));
@@ -141,6 +142,7 @@ public class BoardPostsController : ControllerBase
             request.Category,
             null,
             null,
+            false,
             cancellationToken);
 
         if (post is null)
